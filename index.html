@@ -2426,11 +2426,7 @@
         ictx.textBaseline = 'middle';
         ictx.fillText('⭐', 96, 102);
 
-        const iconDataUrl = iconCanvas.toDataURL('image/png');
-        const appleIconLink = document.getElementById('pwa-apple-icon');
-        if (appleIconLink) appleIconLink.href = iconDataUrl;
-
-        const manifestObj = {
+const manifestObj = {
           name: 'Połącz Kropki - Julka, Nina, Nikola',
           short_name: 'Połącz Kropki',
           description: 'Gra edukacyjna Połącz Kropki w języku polskim, angielskim i hiszpańskim.',
@@ -2442,9 +2438,9 @@
           theme_color: '#6366f1',
           icons: [
             {
-              src: iconDataUrl,
-              sizes: '192x192',
-              type: 'image/png',
+              src: '1794862109579.jpg',
+              sizes: '512x512',
+              type: 'image/jpeg',
               purpose: 'any maskable'
             }
           ]
