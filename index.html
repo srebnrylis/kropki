@@ -1,14 +1,3 @@
-Znalazłem przyczynę! Kod, który wkleiłeś, **urywa się w połowie** (dokładnie na linijce z `const dict = I18N[langCode] || I18N`). Brakuje w nim całej najważniejszej części odpowiedzialnej za rysowanie planszy, dotyk i zamykających tagów `</script>` oraz `</html>`.
-
-Prawdopodobnie przy poprzednim kopiowaniu zaznaczenie "zgubiło" dolną połowę pliku (na telefonach łatwo o taki błąd przy długich tekstach) i na GitHubie zapisał się ucięty, niekompletny plik. Dlatego przeglądarka wyświetla pusty ekran.
-
-Naprawimy to w 15 sekund. Poniżej zamieszczam **kompletny, sprawdzony kod** od pierwszej do ostatniej linijki.
-
-**Bardzo ważne:** Zamiast zaznaczać tekst palcem, po prostu **kliknij małą ikonę kopiowania** (dwie nakładające się kartki / napis "Kopiuj") w prawym górnym rogu poniższego czarnego pola. Dzięki temu skopiujesz całość na 100%.
-
-Następnie wejdź na GitHuba, skasuj wszystko co tam jest, wklej ten kod i kliknij **Commit changes**.
-
-```html
 <!DOCTYPE html>
 <html lang="pl">
 <head>
