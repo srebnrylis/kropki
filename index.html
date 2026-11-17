@@ -75,30 +75,28 @@
       transform: scale(0.93);
     }
 
-    /* INTERAKTYWNY AWATAR I DYMEK */
+/* INTERAKTYWNY AWATAR I DYMEK */
     .avatar-wrapper {
+      position: absolute;
+      top: 15px;
+      right: 15px;
       display: flex;
+      flex-direction: row-reverse; /* Zdjęcie po prawej, dymek po lewej */
       align-items: center;
       gap: 12px;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 20px;
-      padding: 8px 12px;
-      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
-      border: 2px solid #e0e7ff;
-      transition: all 0.3s ease;
-      max-width: 96vw;
-      margin: 8px auto 4px auto;
-      z-index: 80;
+      z-index: 90;
+      pointer-events: none; /* Żeby nie blokować klikania w kropki pod spodem */
     }
 
     .avatar-img {
-      width: 64px;
-      height: 64px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       border: 3px solid #6366f1;
       object-fit: cover;
-      transition: transform 0.2s ease;
       background: #f1f5f9;
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+      transition: transform 0.2s ease;
     }
 
     .avatar-img.bounce {
@@ -109,36 +107,39 @@
       position: relative;
       background: #ffffff;
       border: 2.5px solid #1e1b4b;
-      border-radius: 16px;
-      padding: 6px 12px;
+      border-radius: 18px;
+      padding: 8px 14px;
       font-weight: 700;
       color: #1e1b4b;
       font-size: 13px;
       line-height: 1.3;
-      max-width: 230px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      max-width: 210px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
 
+    /* Dzióbek dymka skierowany w prawo w stronę awatara */
     .speech-bubble::before {
       content: '';
       position: absolute;
-      left: -12px;
+      right: -12px;
+      left: auto;
       top: 50%;
       transform: translateY(-50%);
       border-width: 6px;
       border-style: solid;
-      border-color: transparent #1e1b4b transparent transparent;
+      border-color: transparent transparent transparent #1e1b4b;
     }
 
     .speech-bubble::after {
       content: '';
       position: absolute;
-      left: -9px;
+      right: -9px;
+      left: auto;
       top: 50%;
       transform: translateY(-50%);
       border-width: 5px;
       border-style: solid;
-      border-color: transparent #ffffff transparent transparent;
+      border-color: transparent transparent transparent #ffffff;
     }
 
     @keyframes avatarBounce {
@@ -399,25 +400,25 @@
     <canvas id="gameCanvas" class="flex-1 w-full h-full"></canvas>
   </main>
 
-  <!-- NOWY DOLNY PASEK NARZĘDZI (Bottom Bar) -->
+<!-- NOWY DOLNY PASEK NARZĘDZI (Bottom Bar) -->
   <div class="bottom-toolbar">
-    <button type="button" id="btn-sound" class="btn-interactive bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow-sm text-sm" title="Dźwięk">
-      <span id="sound-icon" class="text-lg">🔊</span>
+    <button type="button" id="btn-sound" class="btn-interactive bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border-2 border-emerald-300 w-14 h-14 sm:w-auto sm:h-11 sm:px-4 sm:py-2.5 rounded-full sm:rounded-2xl font-bold flex justify-center items-center gap-2 shadow-sm text-sm" title="Dźwięk">
+      <span id="sound-icon" class="text-2xl sm:text-lg">🔊</span>
       <span id="ui-sound" class="hidden sm:inline">Dźwięk</span>
     </button>
     
-    <button type="button" id="btn-reset" class="btn-interactive bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-300 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow-sm text-sm" title="Od nowa">
-      <span class="text-lg">🔄</span>
+    <button type="button" id="btn-reset" class="btn-interactive bg-rose-100 hover:bg-rose-200 text-rose-900 border-2 border-rose-300 w-14 h-14 sm:w-auto sm:h-11 sm:px-4 sm:py-2.5 rounded-full sm:rounded-2xl font-bold flex justify-center items-center gap-2 shadow-sm text-sm" title="Od nowa">
+      <span class="text-2xl sm:text-lg">🔄</span>
       <span id="ui-reset" class="hidden sm:inline">Od nowa</span>
     </button>
 
-    <button type="button" id="btn-fullscreen" class="btn-interactive bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-300 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow-sm text-sm" title="Pełny ekran" aria-label="Pełny ekran">
-      <span id="fullscreen-icon" class="text-lg leading-none">⛶</span>
+    <button type="button" id="btn-fullscreen" class="btn-interactive bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border-2 border-indigo-300 w-14 h-14 sm:w-auto sm:h-11 sm:px-4 sm:py-2.5 rounded-full sm:rounded-2xl font-bold flex justify-center items-center gap-2 shadow-sm text-sm" title="Pełny ekran" aria-label="Pełny ekran">
+      <span id="fullscreen-icon" class="text-2xl sm:text-lg leading-none">⛶</span>
       <span id="ui-fullscreen" class="hidden sm:inline">Pełny ekran</span>
     </button>
 
-    <button type="button" id="btn-install-pwa" class="btn-interactive hidden bg-purple-600 hover:bg-purple-700 text-white border border-purple-700 px-4 py-2.5 rounded-2xl font-extrabold items-center gap-2 shadow-sm text-sm" title="Zainstaluj jako aplikację na telefonie">
-      <span class="text-lg leading-none">📲</span>
+    <button type="button" id="btn-install-pwa" class="btn-interactive hidden bg-purple-600 hover:bg-purple-700 text-white border-2 border-purple-700 w-14 h-14 sm:w-auto sm:h-11 sm:px-4 sm:py-2.5 rounded-full sm:rounded-2xl font-extrabold justify-center items-center gap-2 shadow-sm text-sm" title="Zainstaluj jako aplikację na telefonie">
+      <span class="text-2xl sm:text-lg leading-none">📲</span>
       <span id="ui-install-pwa" class="hidden sm:inline">Zainstaluj</span>
     </button>
   </div>
@@ -1108,7 +1109,7 @@
       }
     }
 
-    function resizeCanvas() {
+ function resizeCanvas() {
       const rect = canvas.parentElement.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       canvas.width = rect.width * dpr;
@@ -1119,17 +1120,13 @@
       const padX = isSmallScreen ? Math.max(6, rect.width * 0.018) : Math.max(16, rect.width * 0.04);
       const padY = isSmallScreen ? Math.max(6, rect.height * 0.018) : Math.max(16, rect.height * 0.035);
       
-      // Panel z awatarem zajmuje miejsce nad planszą, dlatego dostosowujemy dostępne miejsce
-      const avatarPanel = document.getElementById('avatar-panel');
-      const avatarH = avatarPanel ? avatarPanel.offsetHeight + 10 : 0;
-      
       const availW = rect.width - padX * 2;
-      const availH = rect.height - padY * 2 - avatarH;
+      const availH = rect.height - padY * 2;
       const size = Math.max(210, Math.min(availW, availH, 760));
 
       boardBox = {
         x: (rect.width - size) / 2,
-        y: (rect.height - size) / 2 - (isSmallScreen ? 3 : 5) + (avatarH / 2),
+        y: (rect.height - size) / 2 - (isSmallScreen ? 3 : 5),
         size: size,
         canvasW: rect.width,
         canvasH: rect.height
