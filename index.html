@@ -314,7 +314,7 @@
   </div>
 
   <!-- OBSZAR GRY CANVAS -->
-  <main class="relative flex-1 w-full h-full overflow-hidden flex flex-col items-center justify-center">
+  <main class="relative flex-1 w-full h-full overflow-hidden block">
 
     <div id="speech-toast" class="bg-indigo-950/90 text-white px-4 py-1.5 rounded-full shadow-lg border-2 border-amber-300 font-extrabold text-sm sm:text-base flex items-center gap-2">
       <span>🔊</span>
@@ -331,7 +331,7 @@
       </button>
     </div>
 
-    <canvas id="gameCanvas" class="w-full h-full"></canvas>
+    <canvas id="gameCanvas" class="absolute inset-0 w-full h-full block touch-none cursor-pointer"></canvas>
   </main>
 
   <!-- NOWY DOLNY PASEK NARZĘDZI (Bottom Bar) -->
@@ -1030,27 +1030,32 @@
       }
     }
 
-    function resizeCanvas() {
+   function resizeCanvas() {
       const rect = canvas.parentElement.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      
+      // Zabezpieczenie przed niewidzialną planszą (0x0px) na starszych telefonach:
+      const w = rect.width > 0 ? rect.width : window.innerWidth;
+      const h = rect.height > 0 ? rect.height : (window.innerHeight - 200);
+      
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const isSmallScreen = rect.width < 640;
-      const padX = isSmallScreen ? Math.max(6, rect.width * 0.018) : Math.max(16, rect.width * 0.04);
-      const padY = isSmallScreen ? Math.max(6, rect.height * 0.018) : Math.max(16, rect.height * 0.035);
+      const isSmallScreen = w < 640;
+      const padX = isSmallScreen ? Math.max(6, w * 0.018) : Math.max(16, w * 0.04);
+      const padY = isSmallScreen ? Math.max(6, h * 0.018) : Math.max(16, h * 0.035);
       
-      const availW = rect.width - padX * 2;
-      const availH = rect.height - padY * 2;
+      const availW = w - padX * 2;
+      const availH = h - padY * 2;
       const size = Math.max(210, Math.min(availW, availH, 760));
 
       boardBox = {
-        x: (rect.width - size) / 2,
-        y: (rect.height - size) / 2 - (isSmallScreen ? 3 : 5),
+        x: (w - size) / 2,
+        y: (h - size) / 2 - (isSmallScreen ? 3 : 5),
         size: size,
-        canvasW: rect.width,
-        canvasH: rect.height
+        canvasW: w,
+        canvasH: h
       };
     }
 
