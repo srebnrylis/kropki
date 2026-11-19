@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#f59e0b" />
+  <title>Combo Quiz • Julka, Nina, Nikola</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: 'Fredoka', sans-serif;
+      background: linear-gradient(135deg, #fef3c7 0%, #e0f2fe 50%, #fce7f3 100%);
+    }
+
+    .ui-bar {
+      position: relative;
+      z-index: 50;
+      pointer-events: auto;
+    }
+
+    #gameCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    .btn-interactive {
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
+      transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-interactive:active {
+      transform: scale(0.92);
+    }
+
+    /* Animacja i kadrowanie Awatara */
+    .avatar-wrapper {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      min-width: 92px;
+      min-height: 92px;
+      border-radius: 24px;
+      border: 3.5px solid #f59e0b;
+      background: #fef3c7;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (min-width: 640px) {
+      .avatar-wrapper {
+        width: 108px;
+        height: 108px;
+        min-width: 108px;
+        min-height: 108px;
+      }
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      transform: scale(1.18);
+      transform-origin: center 25%;
+      transition: transform 0.2s ease;
+    }
+
+    .avatar-wrapper.bounce {
+      animation: avatarBounce 0.45s ease;
+    }
+
+    @keyframes avatarBounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.08) translateY(-3px); }
+      50% { transform: scale(0.96); }
+      80% { transform: scale(1.02); }
+    }
+
+    /* Pasek Dolny */
+    .bottom-toolbar {
+      position: relative;
+      z-index: 50;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e2e8f0;
+      padding: 8px 16px 12px 16px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Modal nakładki */
+    .game-modal-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+      pointer-events: auto;
+    }
+    .game-modal-overlay.active {
+      display: flex;
+    }
+
+    .game-modal-card {
+      width: 100%;
+      max-width: 380px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 28px;
+      padding: 24px 20px;
+      text-align: center;
+      border: 4px solid #f59e0b;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Ogień Combo */
+    @keyframes flameGlow {
+      0%, 100% { filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.6)); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.9)); transform: scale(1.08); }
+    }
+    .combo-active {
+      animation: flameGlow 0.6s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden select-none" style="height: 100dvh;">
+
+  <!-- POWIĘKSZONY GÓRNY PANEL: WYSOKI, PRZEJRZYSTY, DUŻY PORTRET I ZERO KOLIZJI -->
+  <header class="ui-bar w-full bg-white/95 backdrop-blur-md shadow-md border-b-2 border-amber-300 shrink-0 py-2.5 px-3 sm:px-6">
+    <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-2.5">
+      
+      <!-- Lewa i środkowa sekcja: Uporządkowane 3 rzędy informacji -->
+      <div class="flex flex-col justify-between flex-1 min-w-0 pr-1 gap-1.5">
+        
+        <!-- Rząd 1: Powrót do kropek + Wybór języka -->
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <a href="./index.html" class="btn-interactive inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 px-2.5 py-1 rounded-xl text-xs font-bold shadow-sm shrink-0">
+            <span>⬅️</span><span>Kropki</span>
+          </a>
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300 shadow-inner shrink-0" role="group">
+            <button type="button" data-lang="pl" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-sm">🇵🇱 PL</button>
+            <button type="button" data-lang="en" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700">🇬🇧 EN</button>
+            <button type="button" data-lang="es" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700">🇪🇸 ES</button>
+          </div>
+        </div>
+
+        <!-- Rząd 2: Gracz + 3 serduszka w JEDNEJ linii (zawsze bez łamania) -->
+        <div class="flex items-center gap-2">
+          <span id="player-badge" class="bg-indigo-100 text-indigo-950 font-extrabold text-xs sm:text-sm px-2.5 py-0.5 rounded-full border border-indigo-200 whitespace-nowrap">
+            👤 Julka
+          </span>
+          <span id="hearts-display" class="text-sm sm:text-base tracking-widest whitespace-nowrap">❤️❤️❤️</span>
+        </div>
+
+        <!-- Rząd 3: Wynik + Combo -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Wynik:</span>
+          <span id="score-display" class="text-xl sm:text-2xl font-black text-amber-600 leading-none">0</span>
+          <span id="combo-display" class="text-xs font-black px-2 py-0.5 rounded-lg bg-orange-100 text-orange-700 border border-orange-300 hidden whitespace-nowrap">
+            🔥 COMBO x2
+          </span>
+        </div>
+
+      </div>
+
+      <!-- Prawa sekcja: DUŻY PORTRET AWATARA (ZOOM NA TWARZ) I DEDYKOWANY DYMEK POD NIM -->
+      <div class="flex flex-col items-center justify-center shrink-0">
+        <div id="avatar-container" class="avatar-wrapper">
+          <img id="teacher-avatar" class="avatar-img" src="hello.jpeg" alt="Nauczyciel" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f59e0b\' stroke-width=\'2\'><circle cx=\'12\' cy=\'8\' r=\'5\'/><path d=\'M20 21a8 8 0 1 0-16 0\'/></svg>';">
+        </div>
+        <!-- Dymek pod zdjęciem – nie zasłania żadnych napisów po lewej! -->
+        <div id="avatar-bubble" class="mt-1 bg-white border border-amber-300 rounded-full px-2 py-0.5 shadow-sm text-center max-w-[105px] truncate">
+          <span id="avatar-speech" class="text-[10px] sm:text-[11px] font-black text-indigo-950">Hej! 👋</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- BELKA PYTANIA I CZASU -->
+  <div class="ui-bar w-full px-3 py-1.5 bg-amber-500/10 border-b border-amber-200/50 shrink-0">
+    <div class="max-w-xl mx-auto flex flex-col items-center">
+      <div class="flex items-center justify-between w-full px-2 mb-1">
+        <span id="stage-badge" class="text-xs sm:text-sm font-bold text-amber-800">🍏 Runda 1: Sad Owocowy</span>
+        <span id="round-indicator" class="text-xs sm:text-sm font-extrabold text-slate-600">1 / 18</span>
+      </div>
+      
+      <!-- Duży baner pytania -->
+      <div class="w-full bg-white rounded-2xl shadow-sm border-2 border-amber-400 py-1.5 px-4 text-center">
+        <h2 id="question-text" class="text-xl sm:text-2xl font-black text-slate-900 tracking-wide drop-shadow-sm">
+          8 + 4 = ?
+        </h2>
+      </div>
+
+      <!-- Pasek czasu -->
+      <div class="w-full bg-slate-200 rounded-full h-2.5 mt-1.5 overflow-hidden border border-slate-300">
+        <div id="timer-bar" class="bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 h-full w-full transition-all duration-100 ease-linear rounded-full"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBSZAR ROBOCZY: CANVAS ZE ZGRABNYMI JABŁKAMI / GWIAZDKAMI / KORONAMI -->
+  <main class="relative flex-1 w-full min-h-0 overflow-hidden">
+    <canvas id="gameCanvas"></canvas>
+  </main>
+
+  <!-- DOLNY PASEK NARZĘDZIOWY -->
+  <div class="bottom-toolbar shrink-0">
+    <button type="button" id="btn-sound" class="btn-interactive bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-2 border-emerald-200 w-11 h-11 rounded-full font-bold flex justify-center items-center shadow-sm" title="Dźwięk">
+      <span id="sound-icon" class="text-lg">🔊</span>
+    </button>
+
+    <button type="button" id="btn-change-player" class="btn-interactive bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-200 px-3.5 py-1.5 rounded-2xl font-bold flex items-center gap-1.5 shadow-sm text-xs sm:text-sm" title="Zmień gracza">
+      <span>👥</span><span>Zmień gracza</span>
+    </button>
+    
+    <button type="button" id="btn-reset" class="btn-interactive bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 w-11 h-11 rounded-full font-bold flex justify-center items-center shadow-sm" title="Od nowa">
+      <span class="text-lg">🔄</span>
+    </button>
+
+    <button type="button" id="btn-fullscreen" class="btn-interactive bg-amber-50 hover:bg-amber-100 text-amber-700 border-2 border-amber-200 w-11 h-11 rounded-full font-bold flex justify-center items-center shadow-sm" title="Pełny ekran">
+      <span id="fullscreen-icon" class="text-lg leading-none">⛶</span>
+    </button>
+  </div>
+
+  <!-- MODAL 1: WYBÓR GRACZA NA STARCIE -->
+  <div id="player-modal" class="game-modal-overlay active">
+    <div class="game-modal-card">
+      <div class="text-4xl mb-2">👋 🍎 ⭐️</div>
+      <h2 id="modal-welcome-title" class="text-2xl font-black text-slate-900 mb-1">Cześć!</h2>
+      <p id="modal-welcome-subtitle" class="text-base font-extrabold text-amber-700 mb-4">To kto dziś gra?</p>
+
+      <div class="grid grid-cols-1 gap-2.5 mb-2">
+        <button type="button" data-player="Julka" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-emerald-400">
+          <span>👑 Julka</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Wybierz ➡️</span>
+        </button>
+        <button type="button" data-player="Nina" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-purple-400">
+          <span>🦄 Nina</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Wybierz ➡️</span>
+        </button>
+        <button type="button" data-player="Nikola" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-sky-400">
+          <span>🦋 Nikola</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Wybierz ➡️</span>
+        </button>
+        <button type="button" data-player="Gość" class="select-player-btn btn-interactive w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl text-sm border border-slate-300">
+          <span>🌟 Inny gracz (Gość)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: PODSUMOWANIE / WYGRANA / KONIEC ŻYĆ -->
+  <div id="end-modal" class="game-modal-overlay">
+    <div class="game-modal-card">
+      <div id="end-modal-icon" class="text-4xl mb-2">🎉 🏆 🎉</div>
+      <h2 id="end-modal-title" class="text-2xl font-black text-slate-900 mb-1">Brawo! Wspaniale!</h2>
+      <p id="end-modal-subtitle" class="text-sm font-extrabold text-emerald-700 mb-3">Ukończono wszystkie poziomy!</p>
+
+      <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 mb-4 text-left">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+          <span>Gracz:</span><span id="end-player-name" class="font-extrabold text-indigo-900">Julka</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+          <span>Zdobyte punkty:</span><span id="end-score" class="font-black text-amber-600 text-base">1450</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+          <span>Najwyższe Combo:</span><span id="end-combo" class="font-black text-orange-600">x6 🔥</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700">
+          <span>Rekord gracza:</span><span id="end-best" class="font-extrabold text-emerald-700">1450</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <button type="button" id="btn-replay" class="btn-interactive w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold py-3 px-4 rounded-2xl shadow-lg text-base border-2 border-emerald-400">
+          <span>Zagraj jeszcze raz 🔄</span>
+        </button>
+        <button type="button" id="btn-switch-player-modal" class="btn-interactive w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl border border-slate-300 text-sm">
+          <span>Zmień gracza 👥</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ================= 1. BAZA PYTAŃ (18 PROGRESYWNYCH ETAPÓW) ================= */
+      var QUESTIONS = [
+        // Runda 1: Dodawanie i odejmowanie (Jabłka)
+        { q: "8 + 4 = ?",   spoken: { pl: "Ile to jest 8 dodać 4?", en: "What is 8 plus 4?", es: "¿Cuánto es 8 más 4?" }, correct: 12, options: [12, 10, 14, 11], time: 10, theme: 'apple' },
+        { q: "12 + 6 = ?",  spoken: { pl: "Ile to jest 12 dodać 6?", en: "What is 12 plus 6?", es: "¿Cuánto es 12 más 6?" }, correct: 18, options: [18, 16, 19, 20], time: 10, theme: 'apple' },
+        { q: "36 - 4 = ?",  spoken: { pl: "Ile to jest 36 odjąć 4?", en: "What is 36 minus 4?", es: "¿Cuánto es 36 menos 4?" }, correct: 32, options: [32, 30, 34, 28], time: 10, theme: 'apple' },
+        { q: "48 + 5 = ?",  spoken: { pl: "Ile to jest 48 dodać 5?", en: "What is 48 plus 5?", es: "¿Cuánto es 48 más 5?" }, correct: 53, options: [53, 51, 52, 55], time: 10, theme: 'apple' },
+        { q: "25 - 7 = ?",  spoken: { pl: "Ile to jest 25 odjąć 7?", en: "What is 25 minus 7?", es: "¿Cuánto es 25 menos 7?" }, correct: 18, options: [18, 17, 19, 16], time: 9, theme: 'apple' },
+        { q: "64 + 9 = ?",  spoken: { pl: "Ile to jest 64 dodać 9?", en: "What is 64 plus 9?", es: "¿Cuánto es 64 más 9?" }, correct: 73, options: [73, 71, 75, 83], time: 9, theme: 'apple' },
+
+        // Runda 2: Mnożenie (Gwiazdki)
+        { q: "2 × 3 = ?",   spoken: { pl: "Ile to jest 2 razy 3?", en: "What is 2 times 3?", es: "¿Cuánto es 2 por 3?" }, correct: 6,  options: [6, 5, 8, 9], time: 8, theme: 'star' },
+        { q: "4 × 4 = ?",   spoken: { pl: "Ile to jest 4 razy 4?", en: "What is 4 times 4?", es: "¿Cuánto es 4 por 4?" }, correct: 16, options: [16, 12, 18, 20], time: 8, theme: 'star' },
+        { q: "5 × 7 = ?",   spoken: { pl: "Ile to jest 5 razy 7?", en: "What is 5 times 7?", es: "¿Cuánto es 5 por 7?" }, correct: 35, options: [35, 30, 40, 45], time: 8, theme: 'star' },
+        { q: "9 × 3 = ?",   spoken: { pl: "Ile to jest 9 razy 3?", en: "What is 9 times 3?", es: "¿Cuánto es 9 por 3?" }, correct: 27, options: [27, 24, 28, 30], time: 8, theme: 'star' },
+        { q: "7 × 8 = ?",   spoken: { pl: "Ile to jest 7 razy 8?", en: "What is 7 times 8?", es: "¿Cuánto es 7 por 8?" }, correct: 56, options: [56, 54, 64, 48], time: 7.5, theme: 'star' },
+        { q: "9 × 6 = ?",   spoken: { pl: "Ile to jest 9 razy 6?", en: "What is 9 times 6?", es: "¿Cuánto es 9 por 6?" }, correct: 54, options: [54, 56, 63, 45], time: 7.5, theme: 'star' },
+
+        // Runda 3: Dzielenie (Korony i Skarby)
+        { q: "12 : 4 = ?",  spoken: { pl: "Ile to jest 12 podzielić na 4?", en: "What is 12 divided by 4?", es: "¿Cuánto es 12 entre 4?" }, correct: 3,  options: [3, 2, 4, 5], time: 7.5, theme: 'crown' },
+        { q: "50 : 5 = ?",  spoken: { pl: "Ile to jest 50 podzielić na 5?", en: "What is 50 divided by 5?", es: "¿Cuánto es 50 entre 5?" }, correct: 10, options: [10, 5, 15, 20], time: 7, theme: 'crown' },
+        { q: "48 : 4 = ?",  spoken: { pl: "Ile to jest 48 podzielić na 4?", en: "What is 48 divided by 4?", es: "¿Cuánto es 48 entre 4?" }, correct: 12, options: [12, 11, 14, 16], time: 7, theme: 'crown' },
+        { q: "66 : 3 = ?",  spoken: { pl: "Ile to jest 66 podzielić na 3?", en: "What is 66 divided by 3?", es: "¿Cuánto es 66 entre 3?" }, correct: 22, options: [22, 21, 23, 33], time: 6.5, theme: 'crown' },
+        { q: "72 : 8 = ?",  spoken: { pl: "Ile to jest 72 podzielić na 8?", en: "What is 72 divided by 8?", es: "¿Cuánto es 72 entre 8?" }, correct: 9,  options: [9, 7, 8, 6], time: 6.5, theme: 'crown' },
+        { q: "84 : 4 = ?",  spoken: { pl: "Ile to jest 84 podzielić na 4?", en: "What is 84 divided by 4?", es: "¿Cuánto es 84 entre 4?" }, correct: 21, options: [21, 19, 22, 24], time: 6.5, theme: 'crown' }
+      ];
+
+      var I18N = {
+        pl: {
+          speechLang: 'pl-PL',
+          welcomeSpeech: 'Cześć! To kto dziś gra?',
+          startMsg: 'Super, powodzenia!',
+          bravo: 'Brawo! Znakomicie!',
+          oops: 'Oj, spróbujmy dalej!',
+          round1: '🍏 Runda 1: Sad Owocowy',
+          round2: '⭐️ Runda 2: Galaktyka Gwiazd',
+          round3: '👑 Runda 3: Skarby Królewskie',
+          winTitle: 'Brawo! Mistrzowski wynik!',
+          winSubtitle: 'Ukończono wszystkie poziomy!',
+          gameOverTitle: 'Koniec szans!',
+          gameOverSubtitle: 'Ale poszło Ci świetnie! Spróbuj pobić rekord!'
+        },
+        en: {
+          speechLang: 'en-US',
+          welcomeSpeech: 'Hello! Who is playing today?',
+          startMsg: 'Awesome, good luck!',
+          bravo: 'Great job! Excellent!',
+          oops: 'Oops, keep going!',
+          round1: '🍏 Round 1: Fruit Orchard',
+          round2: '⭐️ Round 2: Star Galaxy',
+          round3: '👑 Round 3: Royal Treasures',
+          winTitle: 'Awesome! Master Score!',
+          winSubtitle: 'You finished all levels!',
+          gameOverTitle: 'Out of lives!',
+          gameOverSubtitle: 'Great try! Try to beat your best score!'
+        },
+        es: {
+          speechLang: 'es-ES',
+          welcomeSpeech: '¡Hola! ¿Quién juega hoy?',
+          startMsg: '¡Genial, buena suerte!',
+          bravo: '¡Muy bien! ¡Excelente!',
+          oops: '¡Vaya, seguimos!',
+          round1: '🍏 Ronda 1: Huerto de Frutas',
+          round2: '⭐️ Ronda 2: Galaxia de Estrellas',
+          round3: '👑 Ronda 3: Tesoros Reales',
+          winTitle: '¡Bravo! ¡Puntuación Maestra!',
+          winSubtitle: '¡Completaste todos los niveles!',
+          gameOverTitle: '¡Fin de vidas!',
+          gameOverSubtitle: '¡Gran intento! ¡Intenta batir tu récord!'
+        }
+      };
+
+      /* ================= 2. STAN GRY ================= */
+      var currentLang = 'pl';
+      var currentPlayer = 'Julka';
+      var currentQuestionIdx = 0;
+      var score = 0;
+      var combo = 1;
+      var maxCombo = 1;
+      var lives = 3;
+      var soundEnabled = true;
+      var gameState = 'select_player';
+
+      var questionStartTime = 0;
+      var questionDurationMs = 10000;
+      var isQuestionActive = false;
+
+      var targets = [];
+      var particles = [];
+
+      /* ================= 3. ELEMENTY DOM ================= */
+      var canvas = document.getElementById('gameCanvas');
+      var ctx = canvas.getContext('2d');
+      var teacherAvatar = document.getElementById('teacher-avatar');
+      var avatarContainer = document.getElementById('avatar-container');
+      var avatarSpeech = document.getElementById('avatar-speech');
+      var playerBadge = document.getElementById('player-badge');
+      var heartsDisplay = document.getElementById('hearts-display');
+      var scoreDisplay = document.getElementById('score-display');
+      var comboDisplay = document.getElementById('combo-display');
+      var stageBadge = document.getElementById('stage-badge');
+      var roundIndicator = document.getElementById('round-indicator');
+      var questionText = document.getElementById('question-text');
+      var timerBar = document.getElementById('timer-bar');
+
+      var playerModal = document.getElementById('player-modal');
+      var endModal = document.getElementById('end-modal');
+
+      /* ================= 4. AUDIO & MOWA ================= */
+      var audioCtx = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playSound(type) {
+        if (!soundEnabled) return;
+        ensureAudio();
+        if (!audioCtx) return;
+
+        try {
+          var now = audioCtx.currentTime;
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'hit') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            osc.start(now);
+            osc.stop(now + 0.15);
+          } else if (type === 'miss') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(140, now + 0.2);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.start(now);
+            osc.stop(now + 0.23);
+          } else if (type === 'win') {
+            [523, 659, 783, 1046].forEach(function (freq, i) {
+              var o = audioCtx.createOscillator();
+              var g = audioCtx.createGain();
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              o.frequency.setValueAtTime(freq, now + i * 0.08);
+              g.gain.setValueAtTime(0.08, now + i * 0.08);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+              o.start(now + i * 0.08);
+              o.stop(now + i * 0.08 + 0.36);
+            });
+          }
+        } catch (e) {}
+      }
+
+      function speak(text) {
+        if (!soundEnabled || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          var utter = new SpeechSynthesisUtterance(String(text));
+          utter.lang = I18N[currentLang].speechLang;
+          utter.rate = 1.0;
+          utter.pitch = 1.05;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {}
+      }
+
+      /* ================= 5. AWATAR ================= */
+      var AVATAR_FILES = {
+        hello: 'hello.jpeg',
+        motivation: 'motivation.jpeg',
+        thinking: 'thinking.jpeg',
+        win: 'win.jpeg'
+      };
+
+      function setAvatar(stateKey, speechText, durationMs) {
+        try {
+          var file = AVATAR_FILES[stateKey] || AVATAR_FILES.hello;
+          teacherAvatar.src = file;
+          avatarContainer.classList.remove('bounce');
+          void avatarContainer.offsetWidth;
+          avatarContainer.classList.add('bounce');
+
+          if (speechText) {
+            avatarSpeech.textContent = speechText;
+          }
+
+          if (durationMs) {
+            setTimeout(function () {
+              if (gameState === 'playing') {
+                teacherAvatar.src = AVATAR_FILES.hello;
+              }
+            }, durationMs);
+          }
+        } catch (e) {}
+      }
+
+      /* ================= 6. SKALOWANIE CANVAS ================= */
+      var canvasW = 800;
+      var canvasH = 600;
+
+      function resize() {
+        var parent = canvas.parentElement;
+        var rect = parent ? parent.getBoundingClientRect() : canvas.getBoundingClientRect();
+        var w = rect.width;
+        var h = rect.height;
+
+        if (w < 20 || h < 20) {
+          w = Math.max(300, window.innerWidth);
+          h = Math.max(240, window.innerHeight - 280);
+        }
+
+        var dpr = window.devicePixelRatio || 1;
+        canvasW = w;
+        canvasH = h;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      window.addEventListener('resize', resize);
+      window.addEventListener('orientationchange', function () { setTimeout(resize, 150); });
+
+      /* ================= 7. RYSOWANIE KSZTAŁTÓW ================= */
+      function drawApple(c, x, y, radius, color, number) {
+        c.save();
+        c.translate(x, y);
+
+        // Cień
+        c.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        c.beginPath();
+        c.ellipse(0, radius * 0.95, radius * 0.75, radius * 0.22, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Ogon i liść
+        c.strokeStyle = '#78350f';
+        c.lineWidth = Math.max(2.5, radius * 0.11);
+        c.lineCap = 'round';
+        c.beginPath();
+        c.moveTo(0, -radius * 0.75);
+        c.quadraticCurveTo(radius * 0.2, -radius * 1.15, radius * 0.25, -radius * 1.25);
+        c.stroke();
+
+        c.fillStyle = '#22c55e';
+        c.beginPath();
+        c.ellipse(radius * 0.35, -radius * 0.95, radius * 0.32, radius * 0.16, -0.4, 0, Math.PI * 2);
+        c.fill();
+
+        // Korpus jabłka
+        c.fillStyle = color;
+        c.beginPath();
+        c.arc(-radius * 0.32, 0, radius * 0.75, 0, Math.PI * 2);
+        c.arc(radius * 0.32, 0, radius * 0.75, 0, Math.PI * 2);
+        c.fill();
+
+        // Błysk światła
+        c.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        c.beginPath();
+        c.ellipse(-radius * 0.35, -radius * 0.3, radius * 0.2, radius * 0.12, -0.4, 0, Math.PI * 2);
+        c.fill();
+
+        // Liczba w środku (wyraźny font)
+        c.fillStyle = '#ffffff';
+        c.strokeStyle = '#1e1b4b';
+        c.lineWidth = 3.5;
+        c.font = '900 ' + Math.round(radius * 0.76) + 'px Fredoka, sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.strokeText(String(number), 0, radius * 0.05);
+        c.fillText(String(number), 0, radius * 0.05);
+
+        c.restore();
+      }
+
+      function drawStar(c, x, y, radius, color, number) {
+        c.save();
+        c.translate(x, y);
+
+        c.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        c.beginPath();
+        c.ellipse(0, radius * 0.95, radius * 0.75, radius * 0.22, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = color;
+        c.strokeStyle = '#ffffff';
+        c.lineWidth = 2.5;
+        c.beginPath();
+        var spikes = 5;
+        var step = Math.PI / spikes;
+        var rOuter = radius * 1.05;
+        var rInner = radius * 0.52;
+        var rot = -Math.PI / 2;
+
+        for (var i = 0; i < spikes; i++) {
+          c.lineTo(Math.cos(rot) * rOuter, Math.sin(rot) * rOuter);
+          rot += step;
+          c.lineTo(Math.cos(rot) * rInner, Math.sin(rot) * rInner);
+          rot += step;
+        }
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        c.fillStyle = '#1e1b4b';
+        c.strokeStyle = '#ffffff';
+        c.lineWidth = 3.5;
+        c.font = '900 ' + Math.round(radius * 0.72) + 'px Fredoka, sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.strokeText(String(number), 0, 2);
+        c.fillText(String(number), 0, 2);
+
+        c.restore();
+      }
+
+      function drawCrown(c, x, y, radius, color, number) {
+        c.save();
+        c.translate(x, y);
+
+        c.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        c.beginPath();
+        c.ellipse(0, radius * 0.9, radius * 0.8, radius * 0.25, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = color;
+        c.strokeStyle = '#ca8a04';
+        c.lineWidth = 2.5;
+
+        var w = radius * 1.5;
+        var h = radius * 1.1;
+        c.beginPath();
+        c.moveTo(-w / 2, h / 2);
+        c.lineTo(-w / 2, -h * 0.2);
+        c.lineTo(-w * 0.22, 0);
+        c.lineTo(0, -h * 0.6);
+        c.lineTo(w * 0.22, 0);
+        c.lineTo(w / 2, -h * 0.2);
+        c.lineTo(w / 2, h / 2);
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        var jewels = [-w / 2, 0, w / 2];
+        c.fillStyle = '#ef4444';
+        jewels.forEach(function (jx, idx) {
+          c.beginPath();
+          c.arc(jx, (idx === 1 ? -h * 0.6 : -h * 0.2), radius * 0.16, 0, Math.PI * 2);
+          c.fill();
+        });
+
+        c.fillStyle = '#ffffff';
+        c.strokeStyle = '#78350f';
+        c.lineWidth = 3.5;
+        c.font = '900 ' + Math.round(radius * 0.75) + 'px Fredoka, sans-serif';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.strokeText(String(number), 0, h * 0.18);
+        c.fillText(String(number), 0, h * 0.18);
+
+        c.restore();
+      }
+
+      /* ================= 8. CZĄSTECZKI (SPLASH) ================= */
+      function spawnSplash(x, y, color) {
+        for (var i = 0; i < 22; i++) {
+          var angle = Math.random() * Math.PI * 2;
+          var spd = 2 + Math.random() * 5.5;
+          particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd - 1.5,
+            radius: 3 + Math.random() * 4.5,
+            color: color,
+            alpha: 1
+          });
+        }
+      }
+
+      /* ================= 9. ROZMIESZCZENIE ZMNIEJSZONYCH OBIEKTÓW ================= */
+      var TARGET_COLORS = ['#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+
+      function setupTargetsForQuestion(qData) {
+        targets = [];
+        var opts = qData.options.slice();
+        opts.sort(function () { return Math.random() - 0.5; });
+
+        var count = opts.length;
+        var minDim = Math.min(canvasW, canvasH);
+        var r = Math.max(28, Math.min(42, minDim * 0.08));
+
+        for (var i = 0; i < count; i++) {
+          var col = i % 2;
+          var row = Math.floor(i / 2);
+
+          var baseX = (canvasW * 0.28) + (col * (canvasW * 0.44));
+          var baseY = (canvasH * 0.26) + (row * (canvasH * 0.48));
+
+          baseX += (Math.random() - 0.5) * 16;
+          baseY += (Math.random() - 0.5) * 16;
+
+          targets.push({
+            x: baseX,
+            y: baseY,
+            originX: baseX,
+            originY: baseY,
+            radius: r,
+            number: opts[i],
+            isCorrect: (opts[i] === qData.correct),
+            color: TARGET_COLORS[i % TARGET_COLORS.length],
+            theme: qData.theme,
+            floatSpeed: 0.0022 + Math.random() * 0.0018,
+            floatPhase: Math.random() * Math.PI * 2
+          });
+        }
+      }
+
+      /* ================= 10. STEROWANIE RUNDAMI & DYSKRETNE TEMPO DLA NINY ================= */
+      function loadQuestion(idx) {
+        if (idx >= QUESTIONS.length) {
+          endGame(true);
+          return;
+        }
+
+        currentQuestionIdx = idx;
+        var q = QUESTIONS[idx];
+        isQuestionActive = true;
+        questionStartTime = performance.now();
+
+        // Dyskretne tempo dla Niny: 40% więcej czasu pod maską
+        var timeMultiplier = (currentPlayer === 'Nina') ? 1.40 : 1.0;
+        questionDurationMs = (q.time * timeMultiplier) * 1000;
+
+        questionText.textContent = q.q;
+        roundIndicator.textContent = (idx + 1) + ' / ' + QUESTIONS.length;
+
+        var dict = I18N[currentLang];
+        if (q.theme === 'apple') stageBadge.textContent = dict.round1;
+        else if (q.theme === 'star') stageBadge.textContent = dict.round2;
+        else stageBadge.textContent = dict.round3;
+
+        setupTargetsForQuestion(q);
+        speak(q.spoken[currentLang] || q.spoken.pl);
+        setAvatar('thinking', 'Szukaj liczby! 🎯', 2000);
+      }
+
+      function handleHit(target) {
+        if (!isQuestionActive || gameState !== 'playing') return;
+
+        if (target.isCorrect) {
+          isQuestionActive = false;
+          playSound('hit');
+          spawnSplash(target.x, target.y, target.color);
+
+          var points = 100 * combo;
+          score += points;
+          combo++;
+          if (combo > maxCombo) maxCombo = combo;
+
+          setAvatar('motivation', 'Brawo! +' + points + '! 🔥', 2500);
+          updateHeaderUI();
+
+          setTimeout(function () {
+            loadQuestion(currentQuestionIdx + 1);
+          }, 850);
+        } else {
+          playSound('miss');
+          combo = 1;
+          lives = Math.max(0, lives - 1);
+          setAvatar('thinking', 'Oj, dalej! 🤔', 2500);
+          updateHeaderUI();
+
+          if (lives <= 0) {
+            isQuestionActive = false;
+            endGame(false);
+          } else {
+            target.color = '#64748b';
+          }
+        }
+      }
+
+      function updateHeaderUI() {
+        scoreDisplay.textContent = score;
+
+        var heartsStr = '';
+        for (var i = 0; i < 3; i++) {
+          heartsStr += (i < lives) ? '❤️' : '🖤';
+        }
+        heartsDisplay.textContent = heartsStr;
+
+        if (combo > 1) {
+          comboDisplay.textContent = '🔥 COMBO x' + combo;
+          comboDisplay.classList.remove('hidden');
+          comboDisplay.classList.add('combo-active');
+        } else {
+          comboDisplay.classList.add('hidden');
+          comboDisplay.classList.remove('combo-active');
+        }
+      }
+
+      function endGame(isVictory) {
+        gameState = isVictory ? 'victory' : 'game_over';
+        var dict = I18N[currentLang];
+        playSound(isVictory ? 'win' : 'miss');
+        setAvatar(isVictory ? 'win' : 'thinking', isVictory ? 'Niesamowicie!' : 'Dobra gra!', 0);
+
+        var bestKey = 'combo_best_' + currentPlayer;
+        var prevBest = parseInt(localStorage.getItem(bestKey) || '0', 10);
+        if (score > prevBest) {
+          prevBest = score;
+          localStorage.setItem(bestKey, String(score));
+        }
+
+        document.getElementById('end-modal-icon').textContent = isVictory ? '🏆 🎉 👑' : '👏 ⭐️ 🎮';
+        document.getElementById('end-modal-title').textContent = isVictory ? dict.winTitle : dict.gameOverTitle;
+        document.getElementById('end-modal-subtitle').textContent = isVictory ? dict.winSubtitle : dict.gameOverSubtitle;
+        document.getElementById('end-player-name').textContent = currentPlayer;
+        document.getElementById('end-score').textContent = score;
+        document.getElementById('end-combo').textContent = 'x' + maxCombo + ' 🔥';
+        document.getElementById('end-best').textContent = prevBest;
+
+        endModal.classList.add('active');
+      }
+
+      function startGame(playerName) {
+        currentPlayer = playerName;
+        playerBadge.textContent = '👤 ' + playerName;
+        playerModal.classList.remove('active');
+        endModal.classList.remove('active');
+
+        score = 0;
+        combo = 1;
+        maxCombo = 1;
+        lives = 3;
+        gameState = 'playing';
+
+        updateHeaderUI();
+        resize();
+
+        setAvatar('hello', 'Cześć ' + playerName + '! 👋', 2500);
+        speak('Cześć ' + playerName + '! ' + I18N[currentLang].startMsg);
+
+        setTimeout(function () {
+          loadQuestion(0);
+        }, 1200);
+      }
+
+      /* ================= 11. OBSŁUGA DOTYKU ================= */
+      function getCanvasCoords(e) {
+        var rect = canvas.getBoundingClientRect();
+        var clientX = e.touches && e.touches.length ? e.touches[0].clientX : e.clientX;
+        var clientY = e.touches && e.touches.length ? e.touches[0].clientY : e.clientY;
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      canvas.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        ensureAudio();
+        if (gameState !== 'playing' || !isQuestionActive) return;
+
+        var pos = getCanvasCoords(e);
+        for (var i = 0; i < targets.length; i++) {
+          var t = targets[i];
+          var dist = Math.hypot(pos.x - t.x, pos.y - t.y);
+          if (dist <= t.radius * 1.25) {
+            handleHit(t);
+            break;
+          }
+        }
+      });
+
+      /* ================= 12. GŁÓWNA PĘTLA RENDER ================= */
+      function render(now) {
+        try {
+          ctx.clearRect(0, 0, canvasW, canvasH);
+
+          // Pasek czasu
+          if (isQuestionActive && gameState === 'playing') {
+            var elapsed = now - questionStartTime;
+            var remaining = Math.max(0, questionDurationMs - elapsed);
+            var pct = (remaining / questionDurationMs) * 100;
+            timerBar.style.width = pct + '%';
+
+            if (remaining <= 0) {
+              isQuestionActive = false;
+              playSound('miss');
+              combo = 1;
+              lives = Math.max(0, lives - 1);
+              updateHeaderUI();
+              setAvatar('thinking', 'Czas minął! ⏳', 2000);
+
+              if (lives <= 0) {
+                endGame(false);
+              } else {
+                setTimeout(function () { loadQuestion(currentQuestionIdx + 1); }, 1000);
+              }
+            }
+          }
+
+          // Rysowanie obiektów
+          if (gameState === 'playing' || gameState === 'victory') {
+            for (var i = 0; i < targets.length; i++) {
+              var t = targets[i];
+              var floatY = Math.sin(now * t.floatSpeed + t.floatPhase) * 10;
+              var floatX = Math.cos(now * t.floatSpeed * 0.8 + t.floatPhase) * 6;
+              t.x = t.originX + floatX;
+              t.y = t.originY + floatY;
+
+              if (t.theme === 'apple') {
+                drawApple(ctx, t.x, t.y, t.radius, t.color, t.number);
+              } else if (t.theme === 'star') {
+                drawStar(ctx, t.x, t.y, t.radius, t.color, t.number);
+              } else {
+                drawCrown(ctx, t.x, t.y, t.radius, t.color, t.number);
+              }
+            }
+          }
+
+          // Rysowanie cząsteczek
+          for (var p = particles.length - 1; p >= 0; p--) {
+            var part = particles[p];
+            part.x += part.vx;
+            part.y += part.vy;
+            part.vy += 0.15;
+            part.alpha -= 0.025;
+
+            if (part.alpha <= 0) {
+              particles.splice(p, 1);
+              continue;
+            }
+
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, part.alpha);
+            ctx.fillStyle = part.color;
+            ctx.beginPath();
+            ctx.arc(part.x, part.y, part.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        } catch (err) {
+          console.warn('Render loop err:', err);
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      /* ================= 13. PRZYCISKI I OBSŁUGA JĘZYKA ================= */
+      document.querySelectorAll('.lang-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          currentLang = btn.getAttribute('data-lang') || 'pl';
+          document.querySelectorAll('.lang-btn').forEach(function (b) {
+            var isCur = b.getAttribute('data-lang') === currentLang;
+            b.className = isCur ? 'lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-500 text-white shadow-sm'
+                                : 'lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700';
+          });
+          speak(I18N[currentLang].welcomeSpeech);
+        });
+      });
+
+      document.querySelectorAll('.select-player-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var pName = btn.getAttribute('data-player');
+          startGame(pName);
+        });
+      });
+
+      document.getElementById('btn-change-player').addEventListener('click', function () {
+        playerModal.classList.add('active');
+        setAvatar('hello', 'Kto teraz gra? 👋', 0);
+        speak(I18N[currentLang].welcomeSpeech);
+      });
+
+      document.getElementById('btn-switch-player-modal').addEventListener('click', function () {
+        endModal.classList.remove('active');
+        playerModal.classList.add('active');
+        speak(I18N[currentLang].welcomeSpeech);
+      });
+
+      document.getElementById('btn-replay').addEventListener('click', function () {
+        startGame(currentPlayer);
+      });
+
+      document.getElementById('btn-reset').addEventListener('click', function () {
+        startGame(currentPlayer);
+      });
+
+      document.getElementById('btn-sound').addEventListener('click', function () {
+        soundEnabled = !soundEnabled;
+        document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+        if (!soundEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+      });
+
+      document.getElementById('btn-fullscreen').addEventListener('click', function () {
+        try {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else if (document.exitFullscreen) document.exitFullscreen();
+        } catch (e) {}
+      });
+
+      /* ================= 14. INICJALIZACJA ================= */
+      window.onload = function () {
+        resize();
+        requestAnimationFrame(render);
+
+        setTimeout(function () {
+          speak(I18N[currentLang].welcomeSpeech);
+        }, 600);
+      };
+    })();
+  </script>
+</body>
+</html>
