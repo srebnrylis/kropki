@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#10b981" />
+  <title>Matematyczny Wąż • Zjedz wszystkie jabłka</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: 'Fredoka', sans-serif;
+      background: linear-gradient(135deg, #ecfdf5 0%, #e0f2fe 50%, #fef3c7 100%);
+    }
+
+    .ui-bar {
+      position: relative;
+      z-index: 50;
+      pointer-events: auto;
+    }
+
+    #gameCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .btn-interactive {
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
+      transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-interactive:active {
+      transform: scale(0.92);
+    }
+
+    /* Awatar Nauczyciela */
+    .avatar-wrapper {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      min-width: 86px;
+      min-height: 86px;
+      border-radius: 22px;
+      border: 3.5px solid #10b981;
+      background: #d1fae5;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (min-width: 640px) {
+      .avatar-wrapper {
+        width: 102px;
+        height: 102px;
+        min-width: 102px;
+        min-height: 102px;
+      }
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      transform: scale(1.18);
+      transform-origin: center 25%;
+      transition: transform 0.2s ease;
+    }
+
+    .avatar-wrapper.bounce {
+      animation: avatarBounce 0.45s ease;
+    }
+
+    @keyframes avatarBounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.08) translateY(-3px); }
+      50% { transform: scale(0.96); }
+      80% { transform: scale(1.02); }
+    }
+
+    /* Przyciski sterowania prawą ręką */
+    .thumb-control-pad {
+      position: absolute;
+      right: 14px;
+      bottom: 18px;
+      z-index: 60;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .control-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 3px solid #10b981;
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.08s ease, background-color 0.1s ease;
+    }
+    .control-btn:active {
+      transform: scale(0.88);
+      background-color: #a7f3d0;
+    }
+
+    /* Pasek Dolny */
+    .bottom-toolbar {
+      position: relative;
+      z-index: 50;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e2e8f0;
+      padding: 6px 16px 10px 16px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Modale */
+    .game-modal-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      pointer-events: auto;
+    }
+    .game-modal-overlay.active {
+      display: flex;
+    }
+
+    .game-modal-card {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 28px;
+      padding: 24px 20px;
+      text-align: center;
+      border: 4px solid #10b981;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Drżenie ekranu po uderzeniu w ścianę */
+    .screen-shake {
+      animation: screenShakeAnim 0.32s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes screenShakeAnim {
+      10%, 90% { transform: translate3d(-2px, 1px, 0); }
+      20%, 80% { transform: translate3d(3px, -2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 2px, 0); }
+      40%, 60% { transform: translate3d(4px, -1px, 0); }
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden select-none" style="height: 100dvh;">
+
+  <!-- GÓRNY POWIĘKSZONY PANEL -->
+  <header class="ui-bar w-full bg-white/95 backdrop-blur-md shadow-md border-b-2 border-emerald-300 shrink-0 py-2 px-3 sm:px-6">
+    <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-2.5">
+      
+      <!-- Lewa sekcja: Nawigacja + Gracz + Czasomierz i Licznik pozostałych jabłek -->
+      <div class="flex flex-col justify-between flex-1 min-w-0 pr-1 gap-1">
+        
+        <!-- Rząd 1: Powrót do menu / kropek / quizu + Język -->
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <a href="./index.html" class="btn-interactive inline-flex items-center gap-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-300 px-2 py-0.5 rounded-xl text-xs font-bold shadow-sm shrink-0">
+            <span>⬅️</span><span>Kropki</span>
+          </a>
+          <a href="./quiz.html" class="btn-interactive inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 px-2 py-0.5 rounded-xl text-xs font-bold shadow-sm shrink-0">
+            <span>🎯</span><span>Quiz</span>
+          </a>
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300 shadow-inner shrink-0">
+            <button type="button" data-lang="pl" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500 text-white shadow-sm">🇵🇱 PL</button>
+            <button type="button" data-lang="en" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700">🇬🇧 EN</button>
+            <button type="button" data-lang="es" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700">🇪🇸 ES</button>
+          </div>
+        </div>
+
+        <!-- Rząd 2: Gracz + Stoper czasu -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <span id="player-badge" class="bg-indigo-100 text-indigo-950 font-extrabold text-xs sm:text-sm px-2.5 py-0.5 rounded-full border border-indigo-200 whitespace-nowrap">
+            👤 Julka
+          </span>
+          <div class="flex items-center gap-1 bg-amber-50 border border-amber-300 px-2.5 py-0.5 rounded-full shadow-inner">
+            <span class="text-xs">⏱️</span>
+            <span id="timer-display" class="text-sm font-black text-amber-700 font-mono">00:00.0</span>
+          </div>
+        </div>
+
+        <!-- Rząd 3: Pozostałe jabłka na planszy + Długość węża -->
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-1 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-lg">
+            <span class="text-xs font-bold text-emerald-800">Na planszy:</span>
+            <span id="apples-left-display" class="text-sm font-black text-emerald-700">10 jabłek</span>
+          </div>
+          <div class="flex items-center gap-1 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-lg">
+            <span class="text-xs font-bold text-teal-800">Długość:</span>
+            <span id="length-display" class="text-xs font-black text-teal-700">5</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Prawa sekcja: Duży portret i dymek -->
+      <div class="flex flex-col items-center justify-center shrink-0">
+        <div id="avatar-container" class="avatar-wrapper">
+          <img id="teacher-avatar" class="avatar-img" src="hello.jpeg" alt="Nauczyciel" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2310b981\' stroke-width=\'2\'><circle cx=\'12\' cy=\'8\' r=\'5'/><path d=\'M20 21a8 8 0 1 0-16 0\'/></svg>';">
+        </div>
+        <div id="avatar-bubble" class="mt-1 bg-white border border-emerald-300 rounded-full px-2 py-0.5 shadow-sm text-center max-w-[105px] truncate">
+          <span id="avatar-speech" class="text-[10px] sm:text-[11px] font-black text-emerald-950">Hej! 👋</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- BELKA ZADANIA -->
+  <div class="ui-bar w-full px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-200/50 shrink-0">
+    <div class="max-w-xl mx-auto flex flex-col items-center">
+      <div class="flex items-center justify-between w-full px-2 mb-1">
+        <span id="stage-badge" class="text-xs sm:text-sm font-bold text-emerald-800">🍏 Sad z jabłkami</span>
+        <span id="round-indicator" class="text-xs sm:text-sm font-extrabold text-slate-600">Jabłko 1 z 10</span>
+      </div>
+      
+      <!-- Baner bieżącego działania -->
+      <div class="w-full bg-white rounded-2xl shadow-sm border-2 border-emerald-400 py-1.5 px-4 text-center">
+        <h2 id="question-text" class="text-xl sm:text-2xl font-black text-slate-900 tracking-wide drop-shadow-sm">
+          Zjedz wynik: 4 + 3 = ?
+        </h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBSZAR GRY (CANVAS) -->
+  <main id="gameMain" class="relative flex-1 w-full min-h-0 overflow-hidden bg-slate-900/5">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- STEROWANIE POD PRAWY KCIUK (LEWO / PRAWO) -->
+    <div id="thumbControlPad" class="thumb-control-pad">
+      <button type="button" id="btn-turn-left" class="control-btn" title="Skręć w lewo">
+        <span>↩️</span>
+      </button>
+      <button type="button" id="btn-turn-right" class="control-btn" title="Skręć w prawo">
+        <span>↪️</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- DOLNY PASEK NARZĘDZIOWY -->
+  <div class="bottom-toolbar shrink-0">
+    <button type="button" id="btn-sound" class="btn-interactive bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-2 border-emerald-200 w-10 h-10 rounded-full font-bold flex justify-center items-center shadow-sm" title="Dźwięk">
+      <span id="sound-icon" class="text-lg">🔊</span>
+    </button>
+
+    <button type="button" id="btn-change-player" class="btn-interactive bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-200 px-3 py-1 rounded-2xl font-bold flex items-center gap-1 shadow-sm text-xs" title="Zmień gracza">
+      <span>👥</span><span>Zmień gracza</span>
+    </button>
+    
+    <button type="button" id="btn-reset" class="btn-interactive bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 w-10 h-10 rounded-full font-bold flex justify-center items-center shadow-sm" title="Od nowa">
+      <span class="text-lg">🔄</span>
+    </button>
+
+    <button type="button" id="btn-fullscreen" class="btn-interactive bg-amber-50 hover:bg-amber-100 text-amber-700 border-2 border-amber-200 w-10 h-10 rounded-full font-bold flex justify-center items-center shadow-sm" title="Pełny ekran">
+      <span id="fullscreen-icon" class="text-lg leading-none">⛶</span>
+    </button>
+  </div>
+
+  <!-- MODAL: WYBÓR GRACZA -->
+  <div id="player-modal" class="game-modal-overlay active">
+    <div class="game-modal-card">
+      <div class="text-4xl mb-2">⏱️ 🍏 🐍</div>
+      <h2 class="text-2xl font-black text-slate-900 mb-1">Matematyczny Wąż!</h2>
+      <p class="text-sm font-extrabold text-emerald-700 mb-2">Zjedz wszystkie jabłka z sadu na czas!</p>
+      <p class="text-xs font-semibold text-slate-500 mb-4">Dobre jabłko znika, od złych się odbijasz. Liczy się najlepszy czas!</p>
+
+      <div class="grid grid-cols-1 gap-2.5 mb-2">
+        <button type="button" data-player="Julka" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-emerald-400">
+          <span>👑 Julka</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Start ⏱️</span>
+        </button>
+        <button type="button" data-player="Nina" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-purple-400">
+          <span>🦄 Nina</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Start ⏱️</span>
+        </button>
+        <button type="button" data-player="Nikola" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-sky-400">
+          <span>🦋 Nikola</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Start ⏱️</span>
+        </button>
+        <button type="button" data-player="Gość" class="select-player-btn btn-interactive w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl text-sm border border-slate-300">
+          <span>🌟 Inny gracz (Gość)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FINISZ GRY (WSZYSTKIE JABŁKA ZJEDZONE!) -->
+  <div id="end-modal" class="game-modal-overlay">
+    <div class="game-modal-card">
+      <div id="end-icon" class="text-5xl mb-2 animate-bounce">🏆 🎆 👑</div>
+      <h2 id="end-title" class="text-3xl font-black text-slate-900 mb-1">Sad Oczyszczony!</h2>
+      <p id="end-subtitle" class="text-sm font-extrabold text-emerald-700 mb-3">Wszystkie jabłka zostały zjedzone!</p>
+
+      <div class="bg-gradient-to-b from-emerald-50 to-amber-50 border-2 border-emerald-300 rounded-2xl p-4 mb-4 text-left shadow-inner">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1.5">
+          <span>Mistrzyni:</span><span id="end-player-name" class="font-black text-indigo-900 text-base">Julka</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1.5">
+          <span>Twój czas:</span><span id="end-time" class="font-black text-amber-600 text-2xl font-mono">01:14.3</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1.5">
+          <span>Najlepszy rekord:</span><span id="end-best-time" class="font-black text-emerald-700 text-base font-mono">01:14.3</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700">
+          <span>Długość węża:</span><span id="end-length" class="font-black text-emerald-800 text-base">15 🐍</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <button type="button" id="btn-replay" class="btn-interactive w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white font-black py-3.5 px-4 rounded-2xl shadow-lg text-lg border-2 border-emerald-400">
+          <span>Pobij swój czas! ⏱️ 🔄</span>
+        </button>
+        <button type="button" id="btn-switch-player-modal" class="btn-interactive w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl border border-slate-300 text-sm">
+          <span>Zmień gracza 👥</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ================= 1. BAZY ZADAŃ (STANDARDOWA I ŁAGODNIEJSZA DLA NINY) ================= */
+      // Naturalne, wyraźne formy dla syntezy mowy (PL / EN / ES)
+      var STANDARD_TASKS = [
+        { q: "4 + 3 = ?",  spoken: { pl: "Cztery plus trzy", en: "Four plus three", es: "Cuatro más tres" }, result: 7 },
+        { q: "8 + 5 = ?",  spoken: { pl: "Osiem plus pięć", en: "Eight plus five", es: "Ocho más cinco" }, result: 13 },
+        { q: "16 - 8 = ?", spoken: { pl: "Szesnaście minus osiem", en: "Sixteen minus eight", es: "Dieciséis menos ocho" }, result: 8 },
+        { q: "3 × 4 = ?",  spoken: { pl: "Trzy razy cztery", en: "Three times four", es: "Tres por cuatro" }, result: 12 },
+        { q: "5 × 5 = ?",  spoken: { pl: "Pięć razy pięć", en: "Five times five", es: "Cinco por cinco" }, result: 25 },
+        { q: "6 × 7 = ?",  spoken: { pl: "Sześć razy siedem", en: "Six times seven", es: "Seis por siete" }, result: 42 },
+        { q: "8 × 6 = ?",  spoken: { pl: "Osiem razy sześć", en: "Eight times six", es: "Ocho por seis" }, result: 48 },
+        { q: "20 : 4 = ?", spoken: { pl: "Dwadzieścia przez cztery", en: "Twenty divided by four", es: "Veinte entre cuatro" }, result: 5 },
+        { q: "48 : 6 = ?", spoken: { pl: "Czterdzieści osiem przez sześć", en: "Forty-eight divided by six", es: "Cuarenta y ocho entre seis" }, result: 8 },
+        { q: "81 : 9 = ?", spoken: { pl: "Osiemdziesiąt jeden przez dziewięć", en: "Eighty-one divided by nine", es: "Ochenta y uno entre nueve" }, result: 9 }
+      ];
+
+      // Łagodniejsze dodawanie i mnożenie dla Niny (bez ukrytych komunikatów na ekranie)
+      var NINA_TASKS = [
+        { q: "2 + 3 = ?",  spoken: { pl: "Dwa plus trzy", en: "Two plus three", es: "Dos más tres" }, result: 5 },
+        { q: "4 + 4 = ?",  spoken: { pl: "Cztery plus cztery", en: "Four plus four", es: "Cuatro más cuatro" }, result: 8 },
+        { q: "6 + 2 = ?",  spoken: { pl: "Sześć plus dwa", en: "Six plus two", es: "Seis más dos" }, result: 80 }, // wynik unikalny na planszy: poprawimy na 8 -> zobacz niżej
+        { q: "2 × 3 = ?",  spoken: { pl: "Dwa razy trzy", en: "Two times three", es: "Dos por tres" }, result: 6 },
+        { q: "2 × 5 = ?",  spoken: { pl: "Dwa razy pięć", en: "Two times five", es: "Dos por cinco" }, result: 10 },
+        { q: "3 × 3 = ?",  spoken: { pl: "Trzy razy trzy", en: "Three times three", es: "Tres por tres" }, result: 9 },
+        { q: "4 × 2 = ?",  spoken: { pl: "Cztery razy dwa", en: "Four times two", es: "Cuatro por dos" }, result: 8 },
+        { q: "5 × 2 = ?",  spoken: { pl: "Pięć razy dwa", en: "Five times two", es: "Cinco por dos" }, result: 10 },
+        { q: "10 - 3 = ?", spoken: { pl: "Dziesięć minus trzy", en: "Ten minus three", es: "Diez menos tres" }, result: 7 },
+        { q: "12 : 2 = ?", spoken: { pl: "Dwanaście przez dwa", en: "Twelve divided by two", es: "Doce entre dos" }, result: 6 }
+      ];
+      // Zapewniamy unikalne wyniki na planszy Niny (np. 6+2 -> 8, 4+4 -> 11, 2x5 -> 10, 5x2 -> 15, 12:2 -> 6, 3x3 -> 9)
+      NINA_TASKS = [
+        { q: "2 + 3 = ?",  spoken: { pl: "Dwa plus trzy", en: "Two plus three", es: "Dos más tres" }, result: 5 },
+        { q: "4 + 2 = ?",  spoken: { pl: "Cztery plus dwa", en: "Four plus two", es: "Cuatro más dos" }, result: 6 },
+        { q: "5 + 2 = ?",  spoken: { pl: "Pięć plus dwa", en: "Five plus two", es: "Cinco más dos" }, result: 7 },
+        { q: "6 + 2 = ?",  spoken: { pl: "Sześć plus dwa", en: "Six plus two", es: "Seis más dos" }, result: 8 },
+        { q: "2 × 5 = ?",  spoken: { pl: "Dwa razy pięć", en: "Two times five", es: "Dos por cinco" }, result: 10 },
+        { q: "3 × 4 = ?",  spoken: { pl: "Trzy razy cztery", en: "Three times four", es: "Tres por cuatro" }, result: 12 },
+        { q: "2 × 7 = ?",  spoken: { pl: "Dwa razy siedem", en: "Two times seven", es: "Dos por siete" }, result: 14 },
+        { q: "3 × 5 = ?",  spoken: { pl: "Trzy razy pięć", en: "Three times five", es: "Tres por cinco" }, result: 15 },
+        { q: "10 - 1 = ?", spoken: { pl: "Dziesięć minus jeden", en: "Ten minus one", es: "Diez menos uno" }, result: 9 },
+        { q: "12 : 1 = ?", spoken: { pl: "Dwanaście przez jeden", en: "Twelve divided by one", es: "Doce entre uno" }, result: 12 } // poprawimy na 11 dla unikalności
+      ];
+      NINA_TASKS[9] = { q: "11 - 0 = ?", spoken: { pl: "Jedenaście minus zero", en: "Eleven minus zero", es: "Once menos cero" }, result: 11 };
+
+      var activeTasks = STANDARD_TASKS;
+
+      /* ================= 2. STAN GRY ================= */
+      var currentLang = 'pl';
+      var currentPlayer = 'Julka';
+      var currentTaskIdx = 0;
+      var soundEnabled = true;
+      var gameState = 'select_player';
+
+      var gameStartTime = 0;
+      var finalElapsedTime = 0;
+
+      var snake = {
+        x: 200,
+        y: 300,
+        angle: 0,
+        speed: 2.3,
+        turnSpeed: 0.065,
+        radius: 17,
+        body: [],
+        length: 5,
+        mood: 'happy',
+        moodTimer: 0,
+        invulnerableTimer: 0
+      };
+
+      var turnDirection = 0;
+      var boardApples = [];
+      var particles = [];
+      var shockwaves = [];
+      var wallBumps = [];
+      var fireworks = [];
+
+      /* ================= 3. ELEMENTY DOM ================= */
+      var canvas = document.getElementById('gameCanvas');
+      var ctx = canvas.getContext('2d');
+      var gameMain = document.getElementById('gameMain');
+      var thumbControlPad = document.getElementById('thumbControlPad');
+      var teacherAvatar = document.getElementById('teacher-avatar');
+      var avatarContainer = document.getElementById('avatar-container');
+      var avatarSpeech = document.getElementById('avatar-speech');
+      var playerBadge = document.getElementById('player-badge');
+      var timerDisplay = document.getElementById('timer-display');
+      var applesLeftDisplay = document.getElementById('apples-left-display');
+      var lengthDisplay = document.getElementById('length-display');
+      var questionText = document.getElementById('question-text');
+      var stageBadge = document.getElementById('stage-badge');
+      var roundIndicator = document.getElementById('round-indicator');
+      var playerModal = document.getElementById('player-modal');
+      var endModal = document.getElementById('end-modal');
+
+      /* ================= 4. AUDIO & MOWA ================= */
+      var audioCtx = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playSound(type) {
+        if (!soundEnabled) return;
+        ensureAudio();
+        if (!audioCtx) return;
+
+        try {
+          var now = audioCtx.currentTime;
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'eat') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+            osc.start(now);
+            osc.stop(now + 0.18);
+          } else if (type === 'bounce') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(260, now);
+            osc.frequency.exponentialRampToValueAtTime(140, now + 0.2);
+            gain.gain.setValueAtTime(0.13, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.start(now);
+            osc.stop(now + 0.23);
+          } else if (type === 'wallCrash') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(160, now);
+            osc.frequency.exponentialRampToValueAtTime(50, now + 0.26);
+            gain.gain.setValueAtTime(0.22, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.29);
+            osc.start(now);
+            osc.stop(now + 0.3);
+          } else if (type === 'win') {
+            [523, 659, 783, 1046, 1318].forEach(function (f, i) {
+              var o = audioCtx.createOscillator();
+              var g = audioCtx.createGain();
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              o.frequency.setValueAtTime(f, now + i * 0.09);
+              g.gain.setValueAtTime(0.1, now + i * 0.09);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.42);
+              o.start(now + i * 0.09);
+              o.stop(now + i * 0.09 + 0.44);
+            });
+          }
+        } catch (e) {}
+      }
+
+      function speak(text) {
+        if (!soundEnabled || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          var utter = new SpeechSynthesisUtterance(String(text));
+          utter.lang = (currentLang === 'en') ? 'en-US' : (currentLang === 'es' ? 'es-ES' : 'pl-PL');
+          utter.rate = 0.96;
+          utter.pitch = 1.02;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {}
+      }
+
+      function setAvatar(stateKey, text, durationMs) {
+        var files = {
+          hello: 'hello.jpeg',
+          motivation: 'motivation.jpeg',
+          thinking: 'thinking.jpeg',
+          win: 'win.jpeg'
+        };
+        try {
+          teacherAvatar.src = files[stateKey] || files.hello;
+          avatarContainer.classList.remove('bounce');
+          void avatarContainer.offsetWidth;
+          avatarContainer.classList.add('bounce');
+          if (text) avatarSpeech.textContent = text;
+          if (durationMs) {
+            setTimeout(function () {
+              if (gameState === 'playing') teacherAvatar.src = files.hello;
+            }, durationMs);
+          }
+        } catch (e) {}
+      }
+
+      /* ================= 5. CZAS ================= */
+      function formatTime(ms) {
+        var totalSec = ms / 1000;
+        var m = Math.floor(totalSec / 60);
+        var s = Math.floor(totalSec % 60);
+        var tenths = Math.floor((ms % 1000) / 100);
+        var mm = (m < 10 ? '0' : '') + m;
+        var ss = (s < 10 ? '0' : '') + s;
+        return mm + ':' + ss + '.' + tenths;
+      }
+
+      /* ================= 6. SKALOWANIE CANVAS ================= */
+      var canvasW = 800;
+      var canvasH = 600;
+
+      function resize() {
+        var parent = canvas.parentElement;
+        var rect = parent ? parent.getBoundingClientRect() : canvas.getBoundingClientRect();
+        var w = rect.width;
+        var h = rect.height;
+
+        if (w < 20 || h < 20) {
+          w = Math.max(300, window.innerWidth);
+          h = Math.max(260, window.innerHeight - 240);
+        }
+
+        var dpr = window.devicePixelRatio || 1;
+        canvasW = w;
+        canvasH = h;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener('resize', resize);
+      window.addEventListener('orientationchange', function () { setTimeout(resize, 150); });
+
+      /* ================= 7. STREFA BUFOROWA W PRAWYM DOLNYM ROGU ================= */
+      // Sprawdza, czy punkt (x, y) z promieniem r wpada w strefę buforową przycisków skrętu
+      function isInControlBufferZone(x, y, r) {
+        var mainRect = gameMain.getBoundingClientRect();
+        var padRect = thumbControlPad.getBoundingClientRect();
+
+        // Współrzędne przycisku w układzie canvas
+        var padLeft = (padRect.left - mainRect.left);
+        var padTop = (padRect.top - mainRect.top);
+        var padRight = (padRect.right - mainRect.left);
+        var padBottom = (padRect.bottom - mainRect.top);
+
+        // Dodatkowy margines bezpieczeństwa wokół kciuka i przycisków (np. 36 px)
+        var buffer = 36 + r;
+
+        var inX = (x + buffer) >= padLeft && (x - buffer) <= padRight;
+        var inY = (y + buffer) >= padTop && (y - buffer) <= padBottom;
+
+        return inX && inY;
+      }
+
+      /* ================= 8. TWORZENIE CAŁEJ PULI JABŁEK NA PLANSZY STARTOWEJ ================= */
+      var APPLE_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
+      function spawnAllBoardApples() {
+        boardApples = [];
+        var margin = 45;
+        var appleRadius = 21;
+
+        for (var i = 0; i < activeTasks.length; i++) {
+          var safe = false;
+          var ox = 0, oy = 0, attempts = 0;
+
+          while (!safe && attempts < 120) {
+            ox = margin + Math.random() * (canvasW - margin * 2);
+            oy = margin + Math.random() * (canvasH - margin * 2);
+
+            // 1. Nie pod kciukiem ani tuż nad przyciskami sterowania
+            if (isInControlBufferZone(ox, oy, appleRadius)) {
+              attempts++;
+              continue;
+            }
+
+            // 2. Z dala od startowego położenia węża
+            var distSnake = Math.hypot(ox - snake.x, oy - snake.y);
+            if (distSnake < 100) {
+              attempts++;
+              continue;
+            }
+
+            // 3. Z odpowiednim odstępem od innych jabłek
+            var tooCloseToOther = false;
+            for (var j = 0; j < boardApples.length; j++) {
+              if (Math.hypot(ox - boardApples[j].x, oy - boardApples[j].y) < 55) {
+                tooCloseToOther = true;
+                break;
+              }
+            }
+
+            if (!tooCloseToOther) safe = true;
+            attempts++;
+          }
+
+          boardApples.push({
+            id: i,
+            x: ox,
+            y: oy,
+            radius: appleRadius,
+            number: activeTasks[i].result,
+            color: APPLE_COLORS[i % APPLE_COLORS.length],
+            pulse: Math.random() * Math.PI,
+            wobble: 0
+          });
+        }
+      }
+
+      /* ================= 9. LOGIKA KOLEJNYCH ZADAŃ ================= */
+      function activateTask(idx) {
+        if (idx >= activeTasks.length || boardApples.length === 0) {
+          endGame();
+          return;
+        }
+
+        currentTaskIdx = idx;
+        var task = activeTasks[idx];
+        questionText.textContent = "Zjedz wynik: " + task.q;
+        roundIndicator.textContent = "Zadanie " + (idx + 1) + " z " + activeTasks.length;
+        applesLeftDisplay.textContent = boardApples.length + " jabłek";
+
+        if (idx < 4) stageBadge.textContent = "🍏 Sad: Dodawanie i odejmowanie";
+        else if (idx < 8) stageBadge.textContent = "⭐️ Sad: Mnożenie";
+        else stageBadge.textContent = "👑 Sad: Dzielenie i finał";
+
+        var phrase = task.spoken[currentLang] || task.spoken.pl;
+        speak(phrase);
+        setAvatar('thinking', 'Gdzie jest ' + task.result + '? 🍏', 2000);
+      }
+
+      /* ================= 10. LOGIKA WĘŻA, UDERZEŃ I ANIMACJI ================= */
+      function resetSnake() {
+        snake.x = canvasW / 2;
+        snake.y = canvasH / 2;
+        snake.angle = -Math.PI / 2;
+        snake.body = [];
+        snake.length = 5;
+        snake.mood = 'happy';
+        snake.moodTimer = 0;
+        snake.invulnerableTimer = 0;
+
+        // Dyskretne tempo dla Niny: 18% wolniej pod maską
+        var speedMod = (currentPlayer === 'Nina') ? 0.82 : 1.0;
+        snake.speed = 2.4 * speedMod;
+
+        for (var i = 0; i < snake.length * 6; i++) {
+          snake.body.push({ x: snake.x, y: snake.y + i * 2 });
+        }
+      }
+
+      function triggerScreenShake() {
+        gameMain.classList.remove('screen-shake');
+        void gameMain.offsetWidth;
+        gameMain.classList.add('screen-shake');
+      }
+
+      function spawnWallBump(x, y, angle) {
+        wallBumps.push({
+          x: x,
+          y: y,
+          angle: angle,
+          scale: 0.3,
+          maxScale: 1.85,
+          alpha: 1,
+          life: 38
+        });
+        shockwaves.push({
+          x: x,
+          y: y,
+          radius: 12,
+          maxRadius: 65,
+          alpha: 1,
+          color: '#ef4444'
+        });
+      }
+
+      function spawnParticles(x, y, color, count) {
+        count = count || 20;
+        for (var i = 0; i < count; i++) {
+          var a = Math.random() * Math.PI * 2;
+          var s = 2 + Math.random() * 6;
+          particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s,
+            radius: 3 + Math.random() * 5,
+            color: color,
+            alpha: 1
+          });
+        }
+      }
+
+      function updateSnake() {
+        if (gameState !== 'playing') return;
+
+        snake.angle += turnDirection * snake.turnSpeed;
+        snake.x += Math.cos(snake.angle) * snake.speed;
+        snake.y += Math.sin(snake.angle) * snake.speed;
+
+        var pad = snake.radius;
+        var hitWall = false;
+        var bumpX = snake.x;
+        var bumpY = snake.y;
+
+        if (snake.x < pad) {
+          snake.x = pad;
+          snake.angle = Math.PI - snake.angle;
+          hitWall = true;
+          bumpX = pad;
+        } else if (snake.x > canvasW - pad) {
+          snake.x = canvasW - pad;
+          snake.angle = Math.PI - snake.angle;
+          hitWall = true;
+          bumpX = canvasW - pad;
+        }
+
+        if (snake.y < pad) {
+          snake.y = pad;
+          snake.angle = -snake.angle;
+          hitWall = true;
+          bumpY = pad;
+        } else if (snake.y > canvasH - pad) {
+          snake.y = canvasH - pad;
+          snake.angle = -snake.angle;
+          hitWall = true;
+          bumpY = canvasH - pad;
+        }
+
+        if (hitWall) {
+          playSound('wallCrash');
+          triggerScreenShake();
+          spawnWallBump(bumpX, bumpY, snake.angle);
+          triggerHurt("ŁUP! Ściana! 💥");
+        }
+
+        snake.body.unshift({ x: snake.x, y: snake.y });
+        var maxHistory = snake.length * 6;
+        while (snake.body.length > maxHistory) {
+          snake.body.pop();
+        }
+
+        if (snake.moodTimer > 0) {
+          snake.moodTimer--;
+          if (snake.moodTimer <= 0) snake.mood = 'happy';
+        }
+        if (snake.invulnerableTimer > 0) snake.invulnerableTimer--;
+
+        var currentCorrectResult = activeTasks[currentTaskIdx].result;
+
+        for (var i = 0; i < boardApples.length; i++) {
+          var ap = boardApples[i];
+          var dist = Math.hypot(snake.x - ap.x, snake.y - ap.y);
+
+          if (dist < snake.radius + ap.radius) {
+            if (ap.number === currentCorrectResult) {
+              playSound('eat');
+              spawnParticles(ap.x, ap.y, '#10b981', 32);
+
+              snake.mood = 'chewing';
+              snake.moodTimer = 35;
+              snake.length += 1;
+              lengthDisplay.textContent = snake.length;
+
+              shockwaves.push({
+                x: ap.x,
+                y: ap.y,
+                radius: 12,
+                maxRadius: 55,
+                alpha: 1,
+                color: '#10b981'
+              });
+
+              boardApples.splice(i, 1);
+              applesLeftDisplay.textContent = boardApples.length + " jabłek";
+
+              setAvatar('motivation', 'Mniam! Zjedzone! 🎉', 1800);
+
+              setTimeout(function () {
+                activateTask(currentTaskIdx + 1);
+              }, 300);
+              break;
+
+            } else {
+              if (snake.invulnerableTimer <= 0) {
+                playSound('bounce');
+                triggerHurt("Ała! To nie ten wynik! 😵");
+
+                var bounceAngle = Math.atan2(snake.y - ap.y, snake.x - ap.x);
+                snake.angle = bounceAngle + (Math.random() - 0.5) * 0.35;
+                snake.x += Math.cos(bounceAngle) * 18;
+                snake.y += Math.sin(bounceAngle) * 18;
+                snake.invulnerableTimer = 30;
+
+                ap.wobble = 16;
+                spawnParticles(ap.x, ap.y, ap.color, 10);
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      function triggerHurt(speech) {
+        snake.mood = 'hurt';
+        snake.moodTimer = 45;
+        setAvatar('thinking', speech, 1500);
+      }
+
+      /* ================= 11. RYSOWANIE WĘŻA ================= */
+      function drawSnake() {
+        for (var i = snake.body.length - 1; i >= 0; i -= 5) {
+          var seg = snake.body[i];
+          var progress = 1 - (i / snake.body.length);
+          var segR = Math.max(9, snake.radius * (0.65 + progress * 0.35));
+
+          ctx.fillStyle = (i % 10 === 0) ? '#34d399' : '#10b981';
+          ctx.beginPath();
+          ctx.arc(seg.x, seg.y, segR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.save();
+        ctx.translate(snake.x, snake.y);
+        ctx.rotate(snake.angle);
+
+        if (snake.invulnerableTimer > 0 && Math.floor(snake.invulnerableTimer / 4) % 2 === 0) {
+          ctx.globalAlpha = 0.5;
+        }
+
+        ctx.fillStyle = '#059669';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, snake.radius * 1.25, snake.radius, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (snake.mood === 'hurt') {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+
+          ctx.beginPath();
+          ctx.moveTo(3, -6); ctx.lineTo(9, -2);
+          ctx.moveTo(9, -6); ctx.lineTo(3, -2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(3, 6); ctx.lineTo(9, 2);
+          ctx.moveTo(9, 6); ctx.lineTo(3, 2);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(11, -3); ctx.lineTo(14, 0); ctx.lineTo(11, 3);
+          ctx.stroke();
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillText("💫", -4, -14);
+
+        } else if (snake.mood === 'chewing') {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(6, -5, 4, Math.PI, 0);
+          ctx.arc(6, 5, 4, Math.PI, 0);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(10, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(4, -5, 4.5, 0, Math.PI * 2);
+          ctx.arc(4, 5, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(5.5, -5, 2.2, 0, Math.PI * 2);
+          ctx.arc(5.5, 5, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(14, 0);
+          ctx.lineTo(20, -2);
+          ctx.lineTo(18, 0);
+          ctx.lineTo(20, 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      /* ================= 12. WIELKA GŁOWA UDERZAJĄCA W ŚCIANĘ ================= */
+      function drawWallBumps() {
+        for (var i = wallBumps.length - 1; i >= 0; i--) {
+          var wb = wallBumps[i];
+          wb.life--;
+          wb.scale += (wb.maxScale - wb.scale) * 0.16;
+          wb.alpha = wb.life / 38;
+
+          if (wb.life <= 0) {
+            wallBumps.splice(i, 1);
+            continue;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = wb.alpha;
+          ctx.translate(wb.x, wb.y);
+          ctx.scale(wb.scale, wb.scale);
+
+          ctx.fillStyle = '#fde047';
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          for (var p = 0; p < 8; p++) {
+            var rot = (p / 8) * Math.PI * 2;
+            var r1 = 30, r2 = 14;
+            ctx.lineTo(Math.cos(rot) * r1, Math.sin(rot) * r1);
+            ctx.lineTo(Math.cos(rot + 0.39) * r2, Math.sin(rot + 0.39) * r2);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#059669';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 20, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-7, -4); ctx.lineTo(-3, 0);
+          ctx.moveTo(-3, -4); ctx.lineTo(-7, 0);
+          ctx.moveTo(3, -4); ctx.lineTo(7, 0);
+          ctx.moveTo(7, -4); ctx.lineTo(3, 0);
+          ctx.stroke();
+
+          ctx.fillStyle = '#b91c1c';
+          ctx.font = '900 13px Fredoka, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText("ŁUP!", 0, -18);
+
+          ctx.restore();
+        }
+      }
+
+      /* ================= 13. RYSOWANIE JABŁEK ================= */
+      function drawBoardApples(now) {
+        var currentCorrect = activeTasks[currentTaskIdx] ? activeTasks[currentTaskIdx].result : null;
+
+        for (var i = 0; i < boardApples.length; i++) {
+          var ap = boardApples[i];
+          var isTarget = (ap.number === currentCorrect);
+          var pulse = isTarget ? Math.sin(now * 0.007 + ap.pulse) * 2.5 : Math.sin(now * 0.003 + ap.pulse);
+
+          if (ap.wobble > 0) ap.wobble *= 0.88;
+
+          ctx.save();
+          ctx.translate(ap.x, ap.y);
+          if (ap.wobble > 0) ctx.rotate((Math.random() - 0.5) * (ap.wobble * 0.05));
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+          ctx.beginPath();
+          ctx.ellipse(0, ap.radius * 0.9, ap.radius * 0.8, ap.radius * 0.28, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isTarget) {
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+            ctx.beginPath();
+            ctx.arc(0, 0, ap.radius + 8 + pulse, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -ap.radius * 0.8);
+          ctx.lineTo(2, -ap.radius * 1.25);
+          ctx.stroke();
+
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.ellipse(ap.radius * 0.35, -ap.radius * 0.95, ap.radius * 0.32, ap.radius * 0.16, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = isTarget ? '#10b981' : ap.color;
+          var r = ap.radius + pulse;
+          ctx.beginPath();
+          ctx.arc(-r * 0.32, 0, r * 0.75, 0, Math.PI * 2);
+          ctx.arc(r * 0.32, 0, r * 0.75, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.beginPath();
+          ctx.ellipse(-r * 0.35, -r * 0.3, r * 0.2, r * 0.12, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#1e1b4b';
+          ctx.lineWidth = 3.5;
+          ctx.font = '900 ' + Math.round(r * 0.8) + 'px Fredoka, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.strokeText(String(ap.number), 0, 1);
+          ctx.fillText(String(ap.number), 0, 1);
+
+          ctx.restore();
+        }
+      }
+
+      /* ================= 14. FAJERWERKI ================= */
+      function spawnFireworks() {
+        var colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+        for (var f = 0; f < 3; f++) {
+          var fx = Math.random() * canvasW;
+          var fy = Math.random() * (canvasH * 0.6);
+          var col = colors[Math.floor(Math.random() * colors.length)];
+          for (var p = 0; p < 24; p++) {
+            var ang = Math.random() * Math.PI * 2;
+            var sp = 3 + Math.random() * 7;
+            fireworks.push({
+              x: fx,
+              y: fy,
+              vx: Math.cos(ang) * sp,
+              vy: Math.sin(ang) * sp,
+              radius: 3 + Math.random() * 4,
+              color: col,
+              alpha: 1
+            });
+          }
+        }
+      }
+
+      /* ================= 15. PĘTLA RENDER ================= */
+      function render(now) {
+        ctx.clearRect(0, 0, canvasW, canvasH);
+
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.08)';
+        ctx.lineWidth = 1;
+        var gridSize = 36;
+        for (var x = 0; x < canvasW; x += gridSize) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke();
+        }
+        for (var y = 0; y < canvasH; y += gridSize) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke();
+        }
+
+        if (gameState === 'playing') {
+          var elapsed = performance.now() - gameStartTime;
+          timerDisplay.textContent = formatTime(elapsed);
+        }
+
+        if (gameState === 'playing' || gameState === 'victory') {
+          updateSnake();
+          drawBoardApples(now);
+          drawSnake();
+          drawWallBumps();
+
+          for (var s = shockwaves.length - 1; s >= 0; s--) {
+            var sw = shockwaves[s];
+            sw.radius += 2.5;
+            sw.alpha -= 0.04;
+            if (sw.alpha <= 0) {
+              shockwaves.splice(s, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.strokeStyle = sw.color;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = Math.max(0, sw.alpha);
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          for (var p = particles.length - 1; p >= 0; p--) {
+            var pt = particles[p];
+            pt.x += pt.vx;
+            pt.y += pt.vy;
+            pt.alpha -= 0.025;
+            if (pt.alpha <= 0) {
+              particles.splice(p, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, pt.alpha);
+            ctx.fillStyle = pt.color;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          for (var fw = fireworks.length - 1; fw >= 0; fw--) {
+            var f = fireworks[fw];
+            f.x += f.vx;
+            f.y += f.vy;
+            f.vy += 0.08;
+            f.alpha -= 0.018;
+            if (f.alpha <= 0) {
+              fireworks.splice(fw, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, f.alpha);
+            ctx.fillStyle = f.color;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      /* ================= 16. START I KONIEC GRY ================= */
+      function startGame(pName) {
+        currentPlayer = pName;
+        activeTasks = (currentPlayer === 'Nina') ? NINA_TASKS : STANDARD_TASKS;
+
+        playerBadge.textContent = "👤 " + pName;
+        playerModal.classList.remove('active');
+        endModal.classList.remove('active');
+
+        gameState = 'playing';
+        gameStartTime = performance.now();
+
+        resize();
+        resetSnake();
+        spawnAllBoardApples();
+        activateTask(0);
+
+        setAvatar('hello', 'Start! Schrup jabłka! ⏱️', 2200);
+      }
+
+      function endGame() {
+        gameState = 'victory';
+        finalElapsedTime = performance.now() - gameStartTime;
+        var formatted = formatTime(finalElapsedTime);
+        timerDisplay.textContent = formatted;
+
+        playSound('win');
+        setAvatar('win', 'Niewiarygodny czas! 🏆', 0);
+
+        var bestKey = 'snake_all_apples_time_' + currentPlayer;
+        var prevBest = parseFloat(localStorage.getItem(bestKey) || '999999999');
+        var isNewRecord = false;
+
+        if (finalElapsedTime < prevBest) {
+          prevBest = finalElapsedTime;
+          localStorage.setItem(bestKey, String(finalElapsedTime));
+          isNewRecord = true;
+        }
+
+        spawnFireworks();
+        var fwInterval = setInterval(function () {
+          if (gameState === 'victory') spawnFireworks();
+          else clearInterval(fwInterval);
+        }, 550);
+
+        document.getElementById('end-title').textContent = isNewRecord ? "Nowy Rekord Sadownika! 🎆" : "Sad Oczyszczony! 🏆";
+        document.getElementById('end-subtitle').textContent = isNewRecord ? "Pobiłaś swój dotychczasowy rekord czasu!" : "Wszystkie jabłka zostały zjedzone!";
+        document.getElementById('end-player-name').textContent = currentPlayer;
+        document.getElementById('end-time').textContent = formatted;
+        document.getElementById('end-best-time').textContent = formatTime(prevBest);
+        document.getElementById('end-length').textContent = snake.length + " 🐍";
+
+        endModal.classList.add('active');
+      }
+
+      /* ================= 17. STEROWANIE I PRZYCISKI ================= */
+      var btnLeft = document.getElementById('btn-turn-left');
+      var btnRight = document.getElementById('btn-turn-right');
+
+      function bindTurnButton(btn, dir) {
+        btn.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          ensureAudio();
+          turnDirection = dir;
+        });
+        window.addEventListener('pointerup', function () {
+          if (turnDirection === dir) turnDirection = 0;
+        });
+        window.addEventListener('pointercancel', function () {
+          if (turnDirection === dir) turnDirection = 0;
+        });
+      }
+
+      bindTurnButton(btnLeft, -1);
+      bindTurnButton(btnRight, 1);
+
+      window.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') turnDirection = -1;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') turnDirection = 1;
+      });
+      window.addEventListener('keyup', function (e) {
+        if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && turnDirection === -1) turnDirection = 0;
+        if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && turnDirection === 1) turnDirection = 0;
+      });
+
+      document.querySelectorAll('.lang-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          currentLang = btn.getAttribute('data-lang') || 'pl';
+          document.querySelectorAll('.lang-btn').forEach(function (b) {
+            var isCur = b.getAttribute('data-lang') === currentLang;
+            b.className = isCur ? 'lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500 text-white shadow-sm'
+                                : 'lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700';
+          });
+          if (gameState === 'playing' && activeTasks[currentTaskIdx]) {
+            speak(activeTasks[currentTaskIdx].spoken[currentLang] || activeTasks[currentTaskIdx].spoken.pl);
+          }
+        });
+      });
+
+      document.querySelectorAll('.select-player-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          startGame(btn.getAttribute('data-player'));
+        });
+      });
+
+      document.getElementById('btn-change-player').addEventListener('click', function () {
+        playerModal.classList.add('active');
+      });
+      document.getElementById('btn-switch-player-modal').addEventListener('click', function () {
+        endModal.classList.remove('active');
+        playerModal.classList.add('active');
+      });
+      document.getElementById('btn-replay').addEventListener('click', function () {
+        startGame(currentPlayer);
+      });
+      document.getElementById('btn-reset').addEventListener('click', function () {
+        startGame(currentPlayer);
+      });
+
+      document.getElementById('btn-sound').addEventListener('click', function () {
+        soundEnabled = !soundEnabled;
+        document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+        if (!soundEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+      });
+
+      document.getElementById('btn-fullscreen').addEventListener('click', function () {
+        try {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else if (document.exitFullscreen) document.exitFullscreen();
+        } catch (e) {}
+      });
+
+      /* ================= 18. INICJALIZACJA ================= */
+      window.onload = function () {
+        resize();
+        requestAnimationFrame(render);
+      };
+    })();
+  </script>
+</body>
+</html>
