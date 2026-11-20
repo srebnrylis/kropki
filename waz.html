@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#10b981" />
+  <title>Matematyczny Wąż • Julka, Nina, Nikola</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: 'Fredoka', sans-serif;
+      background: linear-gradient(135deg, #ecfdf5 0%, #e0f2fe 50%, #fef3c7 100%);
+    }
+
+    .ui-bar {
+      position: relative;
+      z-index: 50;
+      pointer-events: auto;
+    }
+
+    #gameCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .btn-interactive {
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
+      transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-interactive:active {
+      transform: scale(0.92);
+    }
+
+    /* Awatar Nauczyciela */
+    .avatar-wrapper {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      min-width: 84px;
+      min-height: 84px;
+      border-radius: 22px;
+      border: 3.5px solid #10b981;
+      background: #d1fae5;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (min-width: 640px) {
+      .avatar-wrapper {
+        width: 100px;
+        height: 100px;
+        min-width: 100px;
+        min-height: 100px;
+      }
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      transform: scale(1.18);
+      transform-origin: center 25%;
+      transition: transform 0.2s ease;
+    }
+
+    .avatar-wrapper.bounce {
+      animation: avatarBounce 0.45s ease;
+    }
+
+    @keyframes avatarBounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.08) translateY(-3px); }
+      50% { transform: scale(0.96); }
+      80% { transform: scale(1.02); }
+    }
+
+    /* Przyciski sterowania prawą ręką */
+    .thumb-control-pad {
+      position: absolute;
+      right: 14px;
+      bottom: 68px;
+      z-index: 60;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .control-btn {
+      width: 66px;
+      height: 66px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 3px solid #10b981;
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.08s ease, background-color 0.1s ease;
+    }
+    .control-btn:active {
+      transform: scale(0.88);
+      background-color: #a7f3d0;
+    }
+
+    /* Pasek Dolny */
+    .bottom-toolbar {
+      position: relative;
+      z-index: 50;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e2e8f0;
+      padding: 6px 16px 10px 16px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Modale */
+    .game-modal-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      pointer-events: auto;
+    }
+    .game-modal-overlay.active {
+      display: flex;
+    }
+
+    .game-modal-card {
+      width: 100%;
+      max-width: 380px;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 28px;
+      padding: 24px 20px;
+      text-align: center;
+      border: 4px solid #10b981;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden select-none" style="height: 100dvh;">
+
+  <!-- GÓRNY POWIĘKSZONY PANEL -->
+  <header class="ui-bar w-full bg-white/95 backdrop-blur-md shadow-md border-b-2 border-emerald-300 shrink-0 py-2.5 px-3 sm:px-6">
+    <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-2.5">
+      
+      <!-- Lewa sekcja z powrotem i danymi -->
+      <div class="flex flex-col justify-between flex-1 min-w-0 pr-1 gap-1.5">
+        
+        <!-- Rząd 1: Powrót do menu / kropek + Język -->
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <a href="./index.html" class="btn-interactive inline-flex items-center gap-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-300 px-2.5 py-1 rounded-xl text-xs font-bold shadow-sm shrink-0">
+            <span>⬅️</span><span>Kropki</span>
+          </a>
+          <a href="./quiz.html" class="btn-interactive inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 px-2.5 py-1 rounded-xl text-xs font-bold shadow-sm shrink-0">
+            <span>🎯</span><span>Quiz</span>
+          </a>
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300 shadow-inner shrink-0">
+            <button type="button" data-lang="pl" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-500 text-white shadow-sm">🇵🇱 PL</button>
+            <button type="button" data-lang="en" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700">🇬🇧 EN</button>
+            <button type="button" data-lang="es" class="lang-btn btn-interactive px-2 py-0.5 rounded-lg text-xs font-bold text-slate-700">🇪🇸 ES</button>
+          </div>
+        </div>
+
+        <!-- Rząd 2: Gracz + Serduszka w jednej linii -->
+        <div class="flex items-center gap-2">
+          <span id="player-badge" class="bg-indigo-100 text-indigo-950 font-extrabold text-xs sm:text-sm px-2.5 py-0.5 rounded-full border border-indigo-200 whitespace-nowrap">
+            👤 Julka
+          </span>
+          <span id="hearts-display" class="text-sm sm:text-base tracking-widest whitespace-nowrap">❤️❤️❤️</span>
+        </div>
+
+        <!-- Rząd 3: Wynik + Długość węża -->
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-1">
+            <span class="text-xs font-extrabold text-slate-500 uppercase">Wynik:</span>
+            <span id="score-display" class="text-xl sm:text-2xl font-black text-emerald-600 leading-none">0</span>
+          </div>
+          <div class="flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+            <span class="text-xs font-bold text-emerald-800">Długość:</span>
+            <span id="length-display" class="text-xs font-black text-emerald-700">5</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Prawa sekcja: Duży portret i dymek -->
+      <div class="flex flex-col items-center justify-center shrink-0">
+        <div id="avatar-container" class="avatar-wrapper">
+          <img id="teacher-avatar" class="avatar-img" src="hello.jpeg" alt="Nauczyciel" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2310b981\' stroke-width=\'2\'><circle cx=\'12\' cy=\'8\' r=\'5\'/><path d=\'M20 21a8 8 0 1 0-16 0\'/></svg>';">
+        </div>
+        <div id="avatar-bubble" class="mt-1 bg-white border border-emerald-300 rounded-full px-2 py-0.5 shadow-sm text-center max-w-[105px] truncate">
+          <span id="avatar-speech" class="text-[10px] sm:text-[11px] font-black text-emerald-950">Hej! 👋</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- BELKA ZADANIA -->
+  <div class="ui-bar w-full px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-200/50 shrink-0">
+    <div class="max-w-xl mx-auto flex flex-col items-center">
+      <div class="flex items-center justify-between w-full px-2 mb-1">
+        <span id="stage-badge" class="text-xs sm:text-sm font-bold text-emerald-800">🐍 Etap 1: Apetyt na dodawanie</span>
+        <span id="round-indicator" class="text-xs sm:text-sm font-extrabold text-slate-600">1 / 15</span>
+      </div>
+      
+      <!-- Baner działania -->
+      <div class="w-full bg-white rounded-2xl shadow-sm border-2 border-emerald-400 py-1.5 px-4 text-center">
+        <h2 id="question-text" class="text-xl sm:text-2xl font-black text-slate-900 tracking-wide drop-shadow-sm">
+          Zjedz wynik: 4 + 3 = ?
+        </h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBSZAR GRY (CANVAS) -->
+  <main class="relative flex-1 w-full min-h-0 overflow-hidden bg-slate-900/5">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- STEROWANIE POD PRAWY KCIUK (LEWO / PRAWO) -->
+    <div class="thumb-control-pad">
+      <button type="button" id="btn-turn-left" class="control-btn" title="Skręć w lewo">
+        <span>↩️</span>
+      </button>
+      <button type="button" id="btn-turn-right" class="control-btn" title="Skręć w prawo">
+        <span>↪️</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- DOLNY PASEK NARZĘDZIOWY -->
+  <div class="bottom-toolbar shrink-0">
+    <button type="button" id="btn-sound" class="btn-interactive bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-2 border-emerald-200 w-10 h-10 rounded-full font-bold flex justify-center items-center shadow-sm" title="Dźwięk">
+      <span id="sound-icon" class="text-lg">🔊</span>
+    </button>
+
+    <button type="button" id="btn-change-player" class="btn-interactive bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-2 border-indigo-200 px-3 py-1 rounded-2xl font-bold flex items-center gap-1 shadow-sm text-xs" title="Zmień gracza">
+      <span>👥</span><span>Zmień gracza</span>
+    </button>
+    
+    <button type="button" id="btn-reset" class="btn-interactive bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 w-10 h-10 rounded-full font-bold flex justify-center items-center shadow-sm" title="Od nowa">
+      <span class="text-lg">🔄</span>
+    </button>
+
+    <button type="button" id="btn-fullscreen" class="btn-interactive bg-amber-50 hover:bg-amber-100 text-amber-700 border-2 border-amber-200 w-10 h-10 rounded-full font-bold flex justify-center items-center shadow-sm" title="Pełny ekran">
+      <span id="fullscreen-icon" class="text-lg leading-none">⛶</span>
+    </button>
+  </div>
+
+  <!-- MODAL: WYBÓR GRACZA -->
+  <div id="player-modal" class="game-modal-overlay active">
+    <div class="game-modal-card">
+      <div class="text-4xl mb-2">🐍 🍎 ⭐️</div>
+      <h2 class="text-2xl font-black text-slate-900 mb-1">Matematyczny Wąż!</h2>
+      <p class="text-base font-extrabold text-emerald-700 mb-4">Wybierz gracza:</p>
+
+      <div class="grid grid-cols-1 gap-2.5 mb-2">
+        <button type="button" data-player="Julka" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-emerald-400">
+          <span>👑 Julka</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Start ➡️</span>
+        </button>
+        <button type="button" data-player="Nina" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-purple-400">
+          <span>🦄 Nina</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Start ➡️</span>
+        </button>
+        <button type="button" data-player="Nikola" class="select-player-btn btn-interactive w-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-black py-3 px-4 rounded-2xl text-lg shadow-md flex items-center justify-between border-2 border-sky-400">
+          <span>🦋 Nikola</span>
+          <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Start ➡️</span>
+        </button>
+        <button type="button" data-player="Gość" class="select-player-btn btn-interactive w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl text-sm border border-slate-300">
+          <span>🌟 Inny gracz (Gość)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KONIEC GRY / WYGRANA -->
+  <div id="end-modal" class="game-modal-overlay">
+    <div class="game-modal-card">
+      <div id="end-icon" class="text-4xl mb-2">🎉 🏆 🎉</div>
+      <h2 id="end-title" class="text-2xl font-black text-slate-900 mb-1">Brawo!</h2>
+      <p id="end-subtitle" class="text-sm font-extrabold text-emerald-700 mb-3">Wąż najadł się wiedzy!</p>
+
+      <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 mb-4 text-left">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+          <span>Gracz:</span><span id="end-player-name" class="font-extrabold text-indigo-900">Julka</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700 mb-1">
+          <span>Zdobyte punkty:</span><span id="end-score" class="font-black text-emerald-600 text-base">0</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-700">
+          <span>Długość węża:</span><span id="end-length" class="font-black text-emerald-700">12 🐍</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <button type="button" id="btn-replay" class="btn-interactive w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-extrabold py-3 px-4 rounded-2xl shadow-lg text-base border-2 border-emerald-400">
+          <span>Zagraj jeszcze raz 🔄</span>
+        </button>
+        <button type="button" id="btn-switch-player-modal" class="btn-interactive w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-xl border border-slate-300 text-sm">
+          <span>Zmień gracza 👥</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ================= 1. BAZA ZADAŃ ================= */
+      var TASKS = [
+        // Dodawanie & Odejmowanie
+        { q: "4 + 3 = ?", spoken: "Ile to jest 4 dodać 3?", correct: 7, numbers: [7, 6, 8, 5, 9] },
+        { q: "9 + 5 = ?", spoken: "Ile to jest 9 dodać 5?", correct: 14, numbers: [14, 13, 15, 12, 16] },
+        { q: "16 - 7 = ?", spoken: "Ile to jest 16 odjąć 7?", correct: 9, numbers: [9, 8, 10, 7, 11] },
+        { q: "24 + 8 = ?", spoken: "Ile to jest 24 dodać 8?", correct: 32, numbers: [32, 30, 31, 34, 28] },
+        { q: "35 - 9 = ?", spoken: "Ile to jest 35 odjąć 9?", correct: 26, numbers: [26, 24, 25, 27, 28] },
+
+        // Mnożenie
+        { q: "3 × 4 = ?", spoken: "Ile to jest 3 razy 4?", correct: 12, numbers: [12, 10, 14, 15, 16] },
+        { q: "6 × 5 = ?", spoken: "Ile to jest 6 razy 5?", correct: 30, numbers: [30, 25, 35, 40, 28] },
+        { q: "7 × 4 = ?", spoken: "Ile to jest 7 razy 4?", correct: 28, numbers: [28, 24, 26, 32, 21] },
+        { q: "8 × 6 = ?", spoken: "Ile to jest 8 razy 6?", correct: 48, numbers: [48, 42, 54, 56, 46] },
+        { q: "9 × 7 = ?", spoken: "Ile to jest 9 razy 7?", correct: 63, numbers: [63, 56, 72, 64, 54] },
+
+        // Dzielenie
+        { q: "15 : 3 = ?", spoken: "Ile to jest 15 podzielić na 3?", correct: 5, numbers: [5, 4, 6, 3, 7] },
+        { q: "28 : 4 = ?", spoken: "Ile to jest 28 podzielić na 4?", correct: 7, numbers: [7, 6, 8, 9, 5] },
+        { q: "45 : 5 = ?", spoken: "Ile to jest 45 podzielić na 5?", correct: 9, numbers: [9, 8, 7, 10, 6] },
+        { q: "56 : 7 = ?", spoken: "Ile to jest 56 podzielić na 7?", correct: 8, numbers: [8, 7, 9, 6, 12] },
+        { q: "72 : 9 = ?", spoken: "Ile to jest 72 podzielić na 9?", correct: 8, numbers: [8, 9, 7, 6, 10] }
+      ];
+
+      /* ================= 2. STAN GRY ================= */
+      var currentLang = 'pl';
+      var currentPlayer = 'Julka';
+      var currentTaskIdx = 0;
+      var score = 0;
+      var lives = 3;
+      var soundEnabled = true;
+      var gameState = 'select_player';
+
+      // Wąż
+      var snake = {
+        x: 200,
+        y: 300,
+        angle: 0, // w radianach
+        speed: 2.2, // prędkość bazowa
+        turnSpeed: 0.065, // promień skrętu
+        radius: 16,
+        body: [],
+        length: 6,
+        mood: 'happy', // happy, hurt, chewing
+        moodTimer: 0,
+        invulnerableTimer: 0
+      };
+
+      // Sterowanie
+      var turnDirection = 0; // -1 w lewo, +1 w prawo, 0 prosto
+      var orbs = []; // kulki z cyframi na planszy
+      var particles = []; // konfetti
+
+      /* ================= 3. ELEMENTY DOM ================= */
+      var canvas = document.getElementById('gameCanvas');
+      var ctx = canvas.getContext('2d');
+      var teacherAvatar = document.getElementById('teacher-avatar');
+      var avatarContainer = document.getElementById('avatar-container');
+      var avatarSpeech = document.getElementById('avatar-speech');
+      var playerBadge = document.getElementById('player-badge');
+      var heartsDisplay = document.getElementById('hearts-display');
+      var scoreDisplay = document.getElementById('score-display');
+      var lengthDisplay = document.getElementById('length-display');
+      var questionText = document.getElementById('question-text');
+      var stageBadge = document.getElementById('stage-badge');
+      var roundIndicator = document.getElementById('round-indicator');
+      var playerModal = document.getElementById('player-modal');
+      var endModal = document.getElementById('end-modal');
+
+      /* ================= 4. AUDIO & MOWA ================= */
+      var audioCtx = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function playSound(type) {
+        if (!soundEnabled) return;
+        ensureAudio();
+        if (!audioCtx) return;
+
+        try {
+          var now = audioCtx.currentTime;
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          if (type === 'eat') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, now);
+            osc.frequency.exponentialRampToValueAtTime(740, now + 0.14);
+            gain.gain.setValueAtTime(0.09, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+            osc.start(now);
+            osc.stop(now + 0.17);
+          } else if (type === 'bounce') {
+            // Sprężyste odbicie boing
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(260, now);
+            osc.frequency.exponentialRampToValueAtTime(140, now + 0.18);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.21);
+          } else if (type === 'win') {
+            [523, 659, 783, 1046].forEach(function (f, i) {
+              var o = audioCtx.createOscillator();
+              var g = audioCtx.createGain();
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              o.frequency.setValueAtTime(f, now + i * 0.08);
+              g.gain.setValueAtTime(0.08, now + i * 0.08);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+              o.start(now + i * 0.08);
+              o.stop(now + i * 0.08 + 0.36);
+            });
+          }
+        } catch (e) {}
+      }
+
+      function speak(text) {
+        if (!soundEnabled || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          var utter = new SpeechSynthesisUtterance(String(text));
+          utter.lang = (currentLang === 'en') ? 'en-US' : (currentLang === 'es' ? 'es-ES' : 'pl-PL');
+          utter.rate = 1.0;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {}
+      }
+
+      function setAvatar(stateKey, text, durationMs) {
+        var files = {
+          hello: 'hello.jpeg',
+          motivation: 'motivation.jpeg',
+          thinking: 'thinking.jpeg',
+          win: 'win.jpeg'
+        };
+        try {
+          teacherAvatar.src = files[stateKey] || files.hello;
+          avatarContainer.classList.remove('bounce');
+          void avatarContainer.offsetWidth;
+          avatarContainer.classList.add('bounce');
+          if (text) avatarSpeech.textContent = text;
+          if (durationMs) {
+            setTimeout(function () {
+              if (gameState === 'playing') teacherAvatar.src = files.hello;
+            }, durationMs);
+          }
+        } catch (e) {}
+      }
+
+      /* ================= 5. SKALOWANIE CANVAS ================= */
+      var canvasW = 800;
+      var canvasH = 600;
+
+      function resize() {
+        var parent = canvas.parentElement;
+        var rect = parent ? parent.getBoundingClientRect() : canvas.getBoundingClientRect();
+        var w = rect.width;
+        var h = rect.height;
+
+        if (w < 20 || h < 20) {
+          w = Math.max(300, window.innerWidth);
+          h = Math.max(260, window.innerHeight - 240);
+        }
+
+        var dpr = window.devicePixelRatio || 1;
+        canvasW = w;
+        canvasH = h;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener('resize', resize);
+      window.addEventListener('orientationchange', function () { setTimeout(resize, 150); });
+
+      /* ================= 6. GENEROWANIE KULEK (ORBS) ================= */
+      var ORB_COLORS = ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+      function spawnOrbs(task) {
+        orbs = [];
+        var nums = task.numbers.slice();
+        nums.sort(function () { return Math.random() - 0.5; });
+
+        var margin = 45;
+        for (var i = 0; i < nums.length; i++) {
+          var safe = false;
+          var ox = 0, oy = 0, attempts = 0;
+
+          while (!safe && attempts < 50) {
+            ox = margin + Math.random() * (canvasW - margin * 2);
+            oy = margin + Math.random() * (canvasH - margin * 2);
+            var distToSnake = Math.hypot(ox - snake.x, oy - snake.y);
+            if (distToSnake > 90) safe = true;
+            attempts++;
+          }
+
+          orbs.push({
+            x: ox,
+            y: oy,
+            radius: 20,
+            number: nums[i],
+            isCorrect: (nums[i] === task.correct),
+            color: ORB_COLORS[i % ORB_COLORS.length],
+            scale: 1,
+            pulse: Math.random() * Math.PI
+          });
+        }
+      }
+
+      /* ================= 7. STEROWANIE ZADANIAMI ================= */
+      function loadTask(idx) {
+        if (idx >= TASKS.length) {
+          endGame(true);
+          return;
+        }
+
+        currentTaskIdx = idx;
+        var task = TASKS[idx];
+        questionText.textContent = "Zjedz wynik: " + task.q;
+        roundIndicator.textContent = (idx + 1) + " / " + TASKS.length;
+
+        if (idx < 5) stageBadge.textContent = "🐍 Etap 1: Apetyt na dodawanie";
+        else if (idx < 10) stageBadge.textContent = "⭐️ Etap 2: Mnożenie na polanie";
+        else stageBadge.textContent = "👑 Etap 3: Dzielenie w koronie";
+
+        spawnOrbs(task);
+        speak(task.spoken);
+        setAvatar('thinking', 'Kieruj na wynik! 🎯', 2000);
+      }
+
+      /* ================= 8. LOGIKA WĘŻA I ODBIJANIE ================= */
+      function resetSnake() {
+        snake.x = canvasW / 2;
+        snake.y = canvasH / 2;
+        snake.angle = -Math.PI / 2;
+        snake.body = [];
+        snake.length = 6;
+        snake.mood = 'happy';
+        snake.moodTimer = 0;
+        snake.invulnerableTimer = 0;
+
+        // Dyskretne tempo dla Niny: 18% wolniej pod maską
+        var speedMod = (currentPlayer === 'Nina') ? 0.82 : 1.0;
+        snake.speed = 2.3 * speedMod;
+
+        for (var i = 0; i < snake.length * 5; i++) {
+          snake.body.push({ x: snake.x, y: snake.y + i * 2 });
+        }
+      }
+
+      function spawnParticles(x, y, color) {
+        for (var i = 0; i < 20; i++) {
+          var a = Math.random() * Math.PI * 2;
+          var s = 2 + Math.random() * 5;
+          particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(a) * s,
+            vy: Math.sin(a) * s,
+            radius: 3 + Math.random() * 4,
+            color: color,
+            alpha: 1
+          });
+        }
+      }
+
+      function updateSnake() {
+        if (gameState !== 'playing') return;
+
+        // Skręt
+        snake.angle += turnDirection * snake.turnSpeed;
+
+        // Ruch do przodu
+        snake.x += Math.cos(snake.angle) * snake.speed;
+        snake.y += Math.sin(snake.angle) * snake.speed;
+
+        // Odbijanie od krawędzi ekranu
+        var pad = snake.radius;
+        if (snake.x < pad) { snake.x = pad; snake.angle = Math.PI - snake.angle; triggerHurt("Ała! Ściana! 😵"); }
+        if (snake.x > canvasW - pad) { snake.x = canvasW - pad; snake.angle = Math.PI - snake.angle; triggerHurt("Ała! Ściana! 😵"); }
+        if (snake.y < pad) { snake.y = pad; snake.angle = -snake.angle; triggerHurt("Ała! Ściana! 😵"); }
+        if (snake.y > canvasH - pad) { snake.y = canvasH - pad; snake.angle = -snake.angle; triggerHurt("Ała! Ściana! 😵"); }
+
+        // Śledzenie ciała
+        snake.body.unshift({ x: snake.x, y: snake.y });
+        var maxHistory = snake.length * 6;
+        while (snake.body.length > maxHistory) {
+          snake.body.pop();
+        }
+
+        // Liczniki mimiki
+        if (snake.moodTimer > 0) {
+          snake.moodTimer--;
+          if (snake.moodTimer <= 0) snake.mood = 'happy';
+        }
+        if (snake.invulnerableTimer > 0) snake.invulnerableTimer--;
+
+        // Kolizja z kulkami
+        for (var i = 0; i < orbs.length; i++) {
+          var orb = orbs[i];
+          var dist = Math.hypot(snake.x - orb.x, snake.y - orb.y);
+
+          if (dist < snake.radius + orb.radius) {
+            if (orb.isCorrect) {
+              // ZJEDZENIE WŁAŚCIWEGO WYNIKU
+              playSound('eat');
+              spawnParticles(orb.x, orb.y, '#10b981');
+              snake.mood = 'chewing';
+              snake.moodTimer = 35;
+              snake.length += 1;
+              score += 150;
+              updateHeaderUI();
+              setAvatar('motivation', 'Mniam! Super! 🎉', 2000);
+
+              // Nowe zadanie
+              setTimeout(function () {
+                loadTask(currentTaskIdx + 1);
+              }, 400);
+              break;
+            } else {
+              // ODBICIE OD ZŁEGO WYNIKU (AŁA!)
+              if (snake.invulnerableTimer <= 0) {
+                playSound('bounce');
+                triggerHurt("Ała! Boli! 💥");
+                
+                // Sprężysty odrzut
+                var bounceAngle = Math.atan2(snake.y - orb.y, snake.x - orb.x);
+                snake.angle = bounceAngle + (Math.random() - 0.5) * 0.4;
+                snake.x += Math.cos(bounceAngle) * 16;
+                snake.y += Math.sin(bounceAngle) * 16;
+                snake.invulnerableTimer = 35;
+
+                lives = Math.max(0, lives - 1);
+                updateHeaderUI();
+
+                if (lives <= 0) {
+                  endGame(false);
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      function triggerHurt(speech) {
+        snake.mood = 'hurt';
+        snake.moodTimer = 45;
+        setAvatar('thinking', speech, 1500);
+      }
+
+      /* ================= 9. RYSOWANIE WĘŻA Z MIMIKĄ ================= */
+      function drawSnake() {
+        // Ciało
+        for (var i = snake.body.length - 1; i >= 0; i -= 5) {
+          var seg = snake.body[i];
+          var progress = 1 - (i / snake.body.length);
+          var segR = Math.max(9, snake.radius * (0.6 + progress * 0.4));
+
+          ctx.fillStyle = (i % 10 === 0) ? '#34d399' : '#10b981';
+          ctx.beginPath();
+          ctx.arc(seg.x, seg.y, segR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Głowa węża
+        ctx.save();
+        ctx.translate(snake.x, snake.y);
+        ctx.rotate(snake.angle);
+
+        // Miganie podczas nietykalności
+        if (snake.invulnerableTimer > 0 && Math.floor(snake.invulnerableTimer / 4) % 2 === 0) {
+          ctx.globalAlpha = 0.5;
+        }
+
+        // Baza głowy
+        ctx.fillStyle = '#059669';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, snake.radius * 1.25, snake.radius, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // RYSOWANIE MIMIKI WĘŻA
+        if (snake.mood === 'hurt') {
+          // MINA: AŁA! (>_<)
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+
+          // Lewe oko krzyżyk
+          ctx.beginPath();
+          ctx.moveTo(3, -6); ctx.lineTo(9, -2);
+          ctx.moveTo(9, -6); ctx.lineTo(3, -2);
+          ctx.stroke();
+
+          // Prawe oko krzyżyk
+          ctx.beginPath();
+          ctx.moveTo(3, 6); ctx.lineTo(9, 2);
+          ctx.moveTo(9, 6); ctx.lineTo(3, 2);
+          ctx.stroke();
+
+          // Usta w zygzak / grymas bólu
+          ctx.strokeStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(11, -3);
+          ctx.lineTo(14, 0);
+          ctx.lineTo(11, 3);
+          ctx.stroke();
+
+          // Gwiazdka bólu nad głową
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillText("💫", -4, -14);
+
+        } else if (snake.mood === 'chewing') {
+          // MINA: MNIAM! RADOŚĆ (^o^)
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(6, -5, 4, Math.PI, 0); // łuk uśmiechniętego oka
+          ctx.arc(6, 5, 4, Math.PI, 0);
+          ctx.stroke();
+
+          // Otwarta roześmiana buźka
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(10, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else {
+          // MINA NORMALNA: Wesołe wielkie oczy i jęzorek
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(4, -5, 4.5, 0, Math.PI * 2);
+          ctx.arc(4, 5, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(5.5, -5, 2.2, 0, Math.PI * 2);
+          ctx.arc(5.5, 5, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Czerwony język
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(14, 0);
+          ctx.lineTo(20, -2);
+          ctx.lineTo(18, 0);
+          ctx.lineTo(20, 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      /* ================= 10. RYSOWANIE KULEK ================= */
+      function drawOrbs(now) {
+        for (var i = 0; i < orbs.length; i++) {
+          var o = orbs[i];
+          var pulse = Math.sin(now * 0.005 + o.pulse) * 1.5;
+
+          ctx.save();
+          ctx.translate(o.x, o.y);
+
+          // Cień
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+          ctx.beginPath();
+          ctx.ellipse(0, o.radius * 0.9, o.radius * 0.8, o.radius * 0.28, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Kulka
+          ctx.fillStyle = o.color;
+          ctx.beginPath();
+          ctx.arc(0, 0, o.radius + pulse, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Połysk
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.beginPath();
+          ctx.arc(-o.radius * 0.3, -o.radius * 0.3, o.radius * 0.32, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Liczba w kulce
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#1e1b4b';
+          ctx.lineWidth = 3.5;
+          ctx.font = '900 ' + Math.round(o.radius * 0.9) + 'px Fredoka, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.strokeText(String(o.number), 0, 1);
+          ctx.fillText(String(o.number), 0, 1);
+
+          ctx.restore();
+        }
+      }
+
+      /* ================= 11. GŁÓWNA PĘTLA RENDER ================= */
+      function render(now) {
+        ctx.clearRect(0, 0, canvasW, canvasH);
+
+        // Siatka tła
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.08)';
+        ctx.lineWidth = 1;
+        var gridSize = 36;
+        for (var x = 0; x < canvasW; x += gridSize) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke();
+        }
+        for (var y = 0; y < canvasH; y += gridSize) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke();
+        }
+
+        if (gameState === 'playing' || gameState === 'victory') {
+          updateSnake();
+          drawOrbs(now);
+          drawSnake();
+
+          // Cząsteczki
+          for (var p = particles.length - 1; p >= 0; p--) {
+            var pt = particles[p];
+            pt.x += pt.vx;
+            pt.y += pt.vy;
+            pt.alpha -= 0.03;
+            if (pt.alpha <= 0) {
+              particles.splice(p, 1);
+              continue;
+            }
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, pt.alpha);
+            ctx.fillStyle = pt.color;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      /* ================= 12. UI I STEROWANIE ================= */
+      function updateHeaderUI() {
+        scoreDisplay.textContent = score;
+        lengthDisplay.textContent = snake.length;
+
+        var h = '';
+        for (var i = 0; i < 3; i++) h += (i < lives) ? '❤️' : '🖤';
+        heartsDisplay.textContent = h;
+      }
+
+      function startGame(pName) {
+        currentPlayer = pName;
+        playerBadge.textContent = "👤 " + pName;
+        playerModal.classList.remove('active');
+        endModal.classList.remove('active');
+
+        score = 0;
+        lives = 3;
+        gameState = 'playing';
+
+        resize();
+        resetSnake();
+        updateHeaderUI();
+
+        setAvatar('hello', 'Cześć ' + pName + '! 🐍', 2000);
+        speak('Cześć ' + pName + '! Steruj wężem i zjadaj właściwe wyniki!');
+
+        setTimeout(function () {
+          loadTask(0);
+        }, 800);
+      }
+
+      function endGame(isWin) {
+        gameState = isWin ? 'victory' : 'game_over';
+        playSound(isWin ? 'win' : 'bounce');
+        setAvatar(isWin ? 'win' : 'thinking', isWin ? 'Mistrzostwo!' : 'Koniec gry!', 0);
+
+        document.getElementById('end-icon').textContent = isWin ? '🏆 🐍 👑' : '👏 🐍 ⭐️';
+        document.getElementById('end-title').textContent = isWin ? 'Wspaniale! Wygrana!' : 'Koniec serduszek!';
+        document.getElementById('end-subtitle').textContent = isWin ? 'Wąż rozwiązał wszystkie zadania!' : 'Spróbuj jeszcze raz pobić swój wynik!';
+        document.getElementById('end-player-name').textContent = currentPlayer;
+        document.getElementById('end-score').textContent = score;
+        document.getElementById('end-length').textContent = snake.length + " 🐍";
+
+        endModal.classList.add('active');
+      }
+
+      // Przyciski skrętu (prawa ręka)
+      var btnLeft = document.getElementById('btn-turn-left');
+      var btnRight = document.getElementById('btn-turn-right');
+
+      function bindTurnButton(btn, dir) {
+        btn.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          ensureAudio();
+          turnDirection = dir;
+        });
+        window.addEventListener('pointerup', function () {
+          if (turnDirection === dir) turnDirection = 0;
+        });
+        window.addEventListener('pointercancel', function () {
+          if (turnDirection === dir) turnDirection = 0;
+        });
+      }
+
+      bindTurnButton(btnLeft, -1);
+      bindTurnButton(btnRight, 1);
+
+      // Klawisze klawiatury jako alternatywa
+      window.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') turnDirection = -1;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') turnDirection = 1;
+      });
+      window.addEventListener('keyup', function (e) {
+        if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && turnDirection === -1) turnDirection = 0;
+        if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && turnDirection === 1) turnDirection = 0;
+      });
+
+      // Wybór gracza
+      document.querySelectorAll('.select-player-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          startGame(btn.getAttribute('data-player'));
+        });
+      });
+
+      document.getElementById('btn-change-player').addEventListener('click', function () {
+        playerModal.classList.add('active');
+      });
+      document.getElementById('btn-switch-player-modal').addEventListener('click', function () {
+        endModal.classList.remove('active');
+        playerModal.classList.add('active');
+      });
+      document.getElementById('btn-replay').addEventListener('click', function () {
+        startGame(currentPlayer);
+      });
+      document.getElementById('btn-reset').addEventListener('click', function () {
+        startGame(currentPlayer);
+      });
+
+      document.getElementById('btn-sound').addEventListener('click', function () {
+        soundEnabled = !soundEnabled;
+        document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+        if (!soundEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+      });
+
+      document.getElementById('btn-fullscreen').addEventListener('click', function () {
+        try {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else if (document.exitFullscreen) document.exitFullscreen();
+        } catch (e) {}
+      });
+
+      /* ================= 13. START ================= */
+      window.onload = function () {
+        resize();
+        requestAnimationFrame(render);
+      };
+    })();
+  </script>
+</body>
+</html>
